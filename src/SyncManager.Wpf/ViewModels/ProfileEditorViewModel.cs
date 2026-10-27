@@ -241,6 +241,31 @@ public sealed class ProfileEditorViewModel : ObservableObject
         return p;
     }
 
+    public SyncProfile GetProfile() => Build();
+
+    public RelayCommand RestoreDefaultsCommand => new(() =>
+    {
+        IncludeSubfolders = true;
+        PreserveTimestamps = true;
+        PreserveAttributes = true;
+        VerifyContentByHash = false;
+        VerifyCopyByHash = false;
+        ToleranceSeconds = 2;
+        IncludeHidden = true;
+        IncludeSystem = false;
+        FilterCaseSensitive = false;
+        FilterWildcards = true;
+        SafetyFolder = "";
+        BackupBeforeOverwrite = true;
+        ContinueOnError = true;
+        ConfirmDeletes = true;
+        MassDeletePercent = 30;
+        MaxParallel = 0;
+        RetryCount = 3;
+        RetryDelayMs = 500;
+        Touch();
+    });
+
     public async Task SaveAsync()
     {
         Error = "";

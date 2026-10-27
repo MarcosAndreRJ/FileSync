@@ -1,0 +1,26 @@
+## Build e Binários .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+_wpftmp/
+*.wpftmp.*
+
+## Arquivos de Sistema e IDE
+.vs/
+.idea/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## Logs e Backups
+*.log
+.SyncBackup/
+
+## Claude
+.claude/
+.claude.json
+
