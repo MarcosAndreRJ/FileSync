@@ -1,0 +1,73 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- ================= Paleta (única fonte das cores do tema claro) ================= -->
+    <Color x:Key="PrimaryColor">#1677FF</Color>
+    <Color x:Key="PrimaryHoverColor">#0F63D8</Color>
+    <Color x:Key="PrimaryPressedColor">#0B51B3</Color>
+    <Color x:Key="PrimarySoftColor">#E8F1FF</Color>
+    <Color x:Key="SuccessColor">#22A06B</Color>
+    <Color x:Key="SuccessHoverColor">#1B8758</Color>
+    <Color x:Key="SuccessSoftColor">#E7F6EF</Color>
+    <Color x:Key="WarningColor">#D89B00</Color>
+    <Color x:Key="WarningSoftColor">#FFF6DC</Color>
+    <Color x:Key="WarningTextColor">#B77B00</Color>
+    <Color x:Key="SuccessTextColor">#1B8758</Color>
+    <Color x:Key="DangerColor">#D64545</Color>
+    <Color x:Key="DangerHoverColor">#B93636</Color>
+    <Color x:Key="DangerSoftColor">#FDECEC</Color>
+    <Color x:Key="PurpleColor">#7E57C2</Color>
+    <Color x:Key="BackgroundColor">#F5F7FA</Color>
+    <Color x:Key="SurfaceColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceAltColor">#F9FAFC</Color>
+    <Color x:Key="BorderColor">#DDE3EA</Color>
+    <Color x:Key="TextPrimaryColor">#1F2937</Color>
+    <Color x:Key="TextSecondaryColor">#667085</Color>
+    <Color x:Key="DisabledColor">#A8B0BC</Color>
+    <Color x:Key="SourceTintColor">#EFF6FF</Color>
+    <Color x:Key="SourceBorderColor">#BFD9FF</Color>
+    <Color x:Key="TargetTintColor">#F0FAF5</Color>
+    <Color x:Key="TargetBorderColor">#BFE6D3</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource PrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{StaticResource PrimaryPressedColor}"/>
+    <SolidColorBrush x:Key="PrimarySoftBrush" Color="{StaticResource PrimarySoftColor}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+    <SolidColorBrush x:Key="SuccessHoverBrush" Color="{StaticResource SuccessHoverColor}"/>
+    <SolidColorBrush x:Key="SuccessSoftBrush" Color="{StaticResource SuccessSoftColor}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+    <SolidColorBrush x:Key="WarningSoftBrush" Color="{StaticResource WarningSoftColor}"/>
+    <SolidColorBrush x:Key="WarningTextBrush" Color="{StaticResource WarningTextColor}"/>
+    <SolidColorBrush x:Key="SuccessTextBrush" Color="{StaticResource SuccessTextColor}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+    <SolidColorBrush x:Key="DangerHoverBrush" Color="{StaticResource DangerHoverColor}"/>
+    <SolidColorBrush x:Key="DangerSoftBrush" Color="{StaticResource DangerSoftColor}"/>
+    <SolidColorBrush x:Key="PurpleBrush" Color="{StaticResource PurpleColor}"/>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="DisabledBrush" Color="{StaticResource DisabledColor}"/>
+    <SolidColorBrush x:Key="SourceTintBrush" Color="{StaticResource SourceTintColor}"/>
+    <SolidColorBrush x:Key="SourceBorderBrush" Color="{StaticResource SourceBorderColor}"/>
+    <SolidColorBrush x:Key="TargetTintBrush" Color="{StaticResource TargetTintColor}"/>
+    <SolidColorBrush x:Key="TargetBorderBrush" Color="{StaticResource TargetBorderColor}"/>
+
+    <!-- Nomes antigos, mantidos para que as telas ainda não refatoradas continuem funcionando -->
+    <SolidColorBrush x:Key="Accent" Color="{StaticResource PrimaryColor}"/>
+    <SolidColorBrush x:Key="AccentDark" Color="{StaticResource PrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="Surface" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="Background" Color="{StaticResource BackgroundColor}"/>
+    <SolidColorBrush x:Key="Border" Color="{StaticResource BorderColor}"/>
+    <SolidColorBrush x:Key="TextMuted" Color="{StaticResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="Danger" Color="{StaticResource DangerColor}"/>
+
+    <!-- Seleção de linhas/itens do sistema: azul claro com texto escuro (em vez do azul forte padrão) -->
+    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="{StaticResource PrimarySoftColor}"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="{StaticResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="{StaticResource PrimarySoftColor}"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{StaticResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="{StaticResource TextPrimaryColor}"/>
+</ResourceDictionary>

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SyncManager.Core\SyncManager.Core.csproj" />
+    <ProjectReference Include="..\SyncManager.Application\SyncManager.Application.csproj" />
+    <ProjectReference Include="..\SyncManager.Infrastructure\SyncManager.Infrastructure.csproj" />
+    <ProjectReference Include="..\SyncManager.Persistence\SyncManager.Persistence.csproj" />
+    <!-- A CLI precisa ficar ao lado do executável: as tarefas agendadas chamam SyncManager.Cli.exe -->
+    <ProjectReference Include="..\SyncManager.Cli\SyncManager.Cli.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.12" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>SyncManager</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- também como recurso: o ícone das janelas (barra de título e barra de tarefas) -->
+    <Resource Include="Resources\app.ico" />
+  </ItemGroup>
+
+</Project>

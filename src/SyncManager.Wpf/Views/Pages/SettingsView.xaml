@@ -1,0 +1,124 @@
+<UserControl x:Class="SyncManager.Wpf.Views.Pages.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls">
+    <!-- Página "Configurações" com categorias. DataContext = MainViewModel; o conteúdo vem de Settings (SettingsViewModel). -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource SmallMutedText}">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="16,12,16,12" DataContext="{Binding Settings}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Path Data="{StaticResource IconSettings}" Width="36" Height="36" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource PageTitle}" Text="Configurações"/>
+                <TextBlock Style="{StaticResource PageSubtitle}" Text="Preferências do aplicativo. Cada perfil ainda pode ter as suas próprias opções."/>
+            </StackPanel>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource PanelBorder}" Padding="0,8" VerticalAlignment="Top">
+                <StackPanel>
+                    <Button x:Name="CatGeneral" Style="{StaticResource NavButton}" Content="Geral" Tag="{Binding GeneralTag}" ctl:Icon.Data="{StaticResource IconSettings}"
+                            Command="{Binding SelectCategoryCommand}" CommandParameter="General"/>
+                    <Button x:Name="CatExecution" Style="{StaticResource NavButton}" Content="Execução" Tag="{Binding ExecutionTag}" ctl:Icon.Data="{StaticResource IconPlay}"
+                            Command="{Binding SelectCategoryCommand}" CommandParameter="Execution"/>
+                    <Button x:Name="CatFilters" Style="{StaticResource NavButton}" Content="Filtros padrão" Tag="{Binding FiltersTag}" ctl:Icon.Data="{StaticResource IconBlock}"
+                            Command="{Binding SelectCategoryCommand}" CommandParameter="Filters"/>
+                    <Button x:Name="CatScheduling" Style="{StaticResource NavButton}" Content="Agendamento" Tag="{Binding SchedulingTag}" ctl:Icon.Data="{StaticResource IconCalendar}"
+                            Command="{Binding SelectCategoryCommand}" CommandParameter="Scheduling"/>
+                    <Button x:Name="CatInterface" Style="{StaticResource NavButton}" Content="Interface" Tag="{Binding InterfaceTag}" ctl:Icon.Data="{StaticResource IconCompare}"
+                            Command="{Binding SelectCategoryCommand}" CommandParameter="Interface"/>
+                    <Button x:Name="CatLogs" Style="{StaticResource NavButton}" Content="Logs" Tag="{Binding LogsTag}" ctl:Icon.Data="{StaticResource IconDocument}"
+                            Command="{Binding SelectCategoryCommand}" CommandParameter="Logs"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="12,0,0,0" Padding="18,14">
+                <Grid>
+                    <StackPanel x:Name="PanelGeneral" Visibility="{Binding IsGeneral, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Geral"/>
+                        <TextBlock Text="Banco de dados local" FontWeight="SemiBold" Margin="0,12,0,2"/>
+                        <TextBlock Text="{Binding DatabasePath}" TextWrapping="Wrap" Style="{StaticResource MutedText}"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="Perfis, histórico, agendamentos e estado da sincronização ficam neste arquivo SQLite."/>
+                        <TextBlock Text="Pasta de logs" FontWeight="SemiBold" Margin="0,14,0,2"/>
+                        <TextBlock Text="{Binding LogDirectory}" TextWrapping="Wrap" Style="{StaticResource MutedText}"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PanelExecution" Visibility="{Binding IsExecution, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Execução"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,6">
+                            <TextBlock Text="Operações em paralelo (disco local):" Width="270" VerticalAlignment="Center"/>
+                            <TextBox Width="60" Text="{Binding MaxParallelLocal, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" AutomationProperties.Name="Paralelismo local"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Operações em paralelo (rede/UNC):" Width="270" VerticalAlignment="Center"/>
+                            <TextBox Width="60" Text="{Binding MaxParallelNetwork, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" AutomationProperties.Name="Paralelismo de rede"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="Valem para perfis com paralelismo automático (0). Um valor definido no perfil prevalece. Entre 1 e 32."/>
+                        <CheckBox x:Name="ConfirmBeforeExecuteBox" Content="Confirmar antes de executar" IsChecked="{Binding ConfirmBeforeExecute}" Margin="0,16,0,0"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="Planos com exclusões seguem a opção &quot;Confirmar antes de excluir&quot; de cada perfil, e a confirmação reforçada de exclusão em massa nunca é dispensada."/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PanelFilters" Visibility="{Binding IsFilters, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Filtros padrão"/>
+                        <TextBlock Text="Exclusões para novos perfis (um padrão por linha)" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                        <TextBox Text="{Binding DefaultExcludePatterns, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="170"
+                                 VerticalScrollBarVisibility="Auto" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Exclusões padrão"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PanelScheduling" Visibility="{Binding IsScheduling, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Agendamento"/>
+                        <TextBlock Text="Notificações das execuções agendadas" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                        <ComboBox ItemsSource="{Binding NotifyOptions}" SelectedItem="{Binding SelectedNotify}" DisplayMemberPath="Label" HorizontalAlignment="Left" MinWidth="440"
+                                  AutomationProperties.Name="Notificações"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="Aparece como notificação do Windows quando uma execução silenciosa (Agendador de Tarefas) termina. Execuções feitas dentro do aplicativo mostram o resultado na tela."/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PanelInterface" Visibility="{Binding IsInterface, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Interface"/>
+                        <CheckBox x:Name="StartMinimizedBox" Content="Iniciar minimizado" IsChecked="{Binding StartMinimized}" Margin="0,12,0,0"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="Vale na próxima vez que o SyncManager for aberto."/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PanelLogs" Visibility="{Binding IsLogs, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Logs"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <TextBlock Text="Apagar logs com mais de (dias):" Width="270" VerticalAlignment="Center"/>
+                            <TextBox Width="60" Text="{Binding LogRetentionDays, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" AutomationProperties.Name="Retenção de logs"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="0 = nunca apagar. A limpeza é feita ao iniciar o aplicativo."/>
+                        <Button Content="Abrir pasta de logs" HorizontalAlignment="Left" Padding="16,8" Margin="0,14,0,0" ctl:Icon.Data="{StaticResource IconFolder}" Command="{Binding OpenLogsCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Message}" FontWeight="SemiBold" Foreground="{DynamicResource SuccessTextBrush}" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="RestoreDefaultsButton" Content="Restaurar padrões" Padding="18,8" Command="{Binding RestoreDefaultsCommand}"/>
+                <Button x:Name="SaveSettingsButton" Content="Salvar" Style="{StaticResource PrimaryButton}" Padding="28,8" Margin="0" Command="{Binding SaveCommand}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

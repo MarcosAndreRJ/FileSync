@@ -1,0 +1,244 @@
+<UserControl x:Class="SyncManager.Wpf.Views.Pages.ProfileEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls"
+             xmlns:pages="clr-namespace:SyncManager.Wpf.Views.Pages">
+    <!-- Editor de perfil com menu lateral. DataContext = MainViewModel; o conteúdo vem de Editor (ProfileEditorViewModel). -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,12,0,4"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource SmallMutedText}">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <DataTemplate x:Key="FilterRow">
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Padrão"/>
+                <Button Grid.Column="1" Margin="6,0,0,0" Padding="8,5" ctl:Icon.Data="{StaticResource IconDelete}" ctl:Icon.Size="16" ToolTip="Remover"
+                        AutomationProperties.Name="Remover padrão"
+                        Command="{Binding DataContext.Editor.RemoveFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}"/>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="16,12,16,12" DataContext="{Binding Editor}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Path Data="{StaticResource IconProfiles}" Width="36" Height="36" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource PageTitle}" Text="{Binding Title}"/>
+                <TextBlock Style="{StaticResource PageSubtitle}" Text="Nada é gravado até você clicar em Salvar."/>
+            </StackPanel>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource PanelBorder}" Background="{DynamicResource DangerSoftBrush}" Margin="0,0,0,10" Padding="10,6"
+                Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+            <TextBlock x:Name="EditorError" Text="{Binding Error}" Foreground="{DynamicResource DangerBrush}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- menu lateral do editor -->
+            <Border Style="{StaticResource PanelBorder}" Padding="0,8" VerticalAlignment="Top">
+                <StackPanel>
+                    <Button x:Name="SecGeneral" Style="{StaticResource NavButton}" Content="Geral" Tag="{Binding GeneralTag}" ctl:Icon.Data="{StaticResource IconProfiles}"
+                            Command="{Binding SelectSectionCommand}" CommandParameter="General"/>
+                    <Button x:Name="SecMethod" Style="{StaticResource NavButton}" Content="Método" Tag="{Binding MethodTag}" ctl:Icon.Data="{StaticResource IconSync}"
+                            Command="{Binding SelectSectionCommand}" CommandParameter="Method"/>
+                    <Button x:Name="SecFilters" Style="{StaticResource NavButton}" Content="Filtros" Tag="{Binding FiltersTag}" ctl:Icon.Data="{StaticResource IconBlock}"
+                            Command="{Binding SelectSectionCommand}" CommandParameter="Filters"/>
+                    <Button x:Name="SecSchedule" Style="{StaticResource NavButton}" Content="Agendamento" Tag="{Binding ScheduleTag}" ctl:Icon.Data="{StaticResource IconCalendar}"
+                            Command="{Binding SelectSectionCommand}" CommandParameter="Schedule"/>
+                    <Button x:Name="SecAdvanced" Style="{StaticResource NavButton}" Content="Avançado" Tag="{Binding AdvancedTag}" ctl:Icon.Data="{StaticResource IconSettings}"
+                            Command="{Binding SelectSectionCommand}" CommandParameter="Advanced"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="12,0,0,0" Padding="18,14">
+                <Grid>
+                    <!-- GERAL -->
+                    <ScrollViewer x:Name="PanelGeneral" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsGeneral, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="Geral"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Nome do perfil"/>
+                            <TextBox x:Name="NameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Nome do perfil"/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Pasta Source (origem)"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox x:Name="SourceBox" Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Pasta Source"/>
+                                <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,6" ctl:Icon.Data="{StaticResource IconFolder}" Command="{Binding BrowseSourceCommand}" ToolTip="Procurar pasta"/>
+                            </Grid>
+                            <TextBlock Text="{Binding SourceTestText}" Foreground="{Binding SourceTestBrush}" FontWeight="SemiBold" Margin="0,4,0,0"/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Pasta Target (destino)"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox x:Name="TargetBox" Text="{Binding Target, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Pasta Target"/>
+                                <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,6" ctl:Icon.Data="{StaticResource IconFolder}" Command="{Binding BrowseTargetCommand}" ToolTip="Procurar pasta"/>
+                            </Grid>
+                            <TextBlock Text="{Binding TargetTestText}" Foreground="{Binding TargetTestBrush}" FontWeight="SemiBold" Margin="0,4,0,0"/>
+
+                            <Button x:Name="TestConnectionsButton" Content="Testar conexões" HorizontalAlignment="Left" Padding="16,8" Margin="0,12,0,0"
+                                    ctl:Icon.Data="{StaticResource IconSync}" Command="{Binding TestConnectionsCommand}"
+                                    ToolTip="Confere se as duas pastas estão acessíveis (Source: leitura; Target: leitura e escrita). Não altera nada."/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Margin="0,18,0,4" Text="Opções"/>
+                            <CheckBox Content="Incluir subpastas" IsChecked="{Binding IncludeSubfolders}" Margin="0,3"/>
+                            <CheckBox Content="Preservar data de modificação" IsChecked="{Binding PreserveTimestamps}" Margin="0,3"/>
+                            <CheckBox Content="Preservar atributos" IsChecked="{Binding PreserveAttributes}" Margin="0,3"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- MÉTODO -->
+                    <ScrollViewer x:Name="PanelMethod" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsMethod, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="Método de sincronização"/>
+                            <ListBox x:Name="MethodList" ItemsSource="{Binding Methods}" SelectedItem="{Binding SelectedMethod}" BorderThickness="0" Background="Transparent"
+                                     Margin="0,6,0,0" AutomationProperties.Name="Método">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate></Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton GroupName="EditorMethod" Margin="0,5"
+                                                     IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding Description}" Style="{StaticResource Hint}" MaxWidth="620" HorizontalAlignment="Left"/>
+                                            </StackPanel>
+                                        </RadioButton>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Margin="0,14,0,4" Text="Exclusões"/>
+                            <ComboBox ItemsSource="{Binding DeleteOptions}" SelectedItem="{Binding SelectedDeleteOption}" DisplayMemberPath="Label" HorizontalAlignment="Left" MinWidth="360"
+                                      AutomationProperties.Name="Estratégia de exclusão"/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Margin="0,14,0,4" Text="Comparação"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Tolerância de data (segundos):" VerticalAlignment="Center" Width="210"/>
+                                <TextBox Width="60" Text="{Binding ToleranceSeconds, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                            </StackPanel>
+                            <CheckBox Content="Verificar conteúdo por hash SHA-256 (quando tamanho e data não bastam)" IsChecked="{Binding VerifyContentByHash}" Margin="0,8,0,3"/>
+                            <CheckBox Content="Conferir o hash da cópia antes de substituir o destino" IsChecked="{Binding VerifyCopyByHash}" Margin="0,3"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- FILTROS -->
+                    <ScrollViewer x:Name="PanelFilters" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsFilters, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="Filtros"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="Sintaxe: *.tmp (nome, em qualquer nível), Thumbs.db, pasta\ (somente pastas), src\obj (caminho), \build (ancorado na raiz), ** atravessa pastas."/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Excluir"/>
+                            <ItemsControl x:Name="ExcludeList" ItemsSource="{Binding Excludes}" ItemTemplate="{StaticResource FilterRow}" AutomationProperties.Name="Padrões de exclusão"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox x:Name="NewExcludeBox" Text="{Binding NewExclude, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}"
+                                         AutomationProperties.Name="Novo padrão de exclusão"/>
+                                <Button x:Name="AddExcludeButton" Grid.Column="1" Content="Adicionar" Margin="6,0,0,0" Padding="14,6" ctl:Icon.Data="{StaticResource IconAdd}" ctl:Icon.Size="16"
+                                        Command="{Binding AddExcludeCommand}"/>
+                            </Grid>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Margin="0,18,0,4" Text="Incluir somente (opcional; vazio = tudo)"/>
+                            <ItemsControl x:Name="IncludeList" ItemsSource="{Binding Includes}" ItemTemplate="{StaticResource FilterRow}" AutomationProperties.Name="Padrões de inclusão"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox x:Name="NewIncludeBox" Text="{Binding NewInclude, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}"
+                                         AutomationProperties.Name="Novo padrão de inclusão"/>
+                                <Button x:Name="AddIncludeButton" Grid.Column="1" Content="Adicionar" Margin="6,0,0,0" Padding="14,6" ctl:Icon.Data="{StaticResource IconAdd}" ctl:Icon.Size="16"
+                                        Command="{Binding AddIncludeCommand}"/>
+                            </Grid>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Margin="0,18,0,4" Text="Opções dos filtros"/>
+                            <CheckBox Content="Aplicar às subpastas (vale a opção &quot;Incluir subpastas&quot; da seção Geral)" IsChecked="{Binding IncludeSubfolders}" Margin="0,3"/>
+                            <CheckBox Content="Diferenciar maiúsculas de minúsculas" IsChecked="{Binding FilterCaseSensitive}" Margin="0,3"/>
+                            <CheckBox Content="Usar curingas (* e ?)" IsChecked="{Binding FilterWildcards}" Margin="0,3"/>
+                            <CheckBox Content="Incluir arquivos ocultos" IsChecked="{Binding IncludeHidden}" Margin="0,3"/>
+                            <CheckBox Content="Incluir arquivos de sistema" IsChecked="{Binding IncludeSystem}" Margin="0,3"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- AGENDAMENTO -->
+                    <Grid x:Name="PanelSchedule" Visibility="{Binding IsSchedule, Converter={StaticResource BoolToVis}}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" Text="Agendamento" Margin="0,0,0,8"/>
+                            <pages:ScheduleEditorView DataContext="{Binding Schedule}" Visibility="{Binding HasProfile, Converter={StaticResource BoolToVis}}"/>
+                        </DockPanel>
+                        <TextBlock x:Name="ScheduleNeedsSave" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+                                   Style="{StaticResource MutedText}" Visibility="{Binding CannotSchedule, Converter={StaticResource BoolToVis}}"
+                                   Text="Salve o perfil primeiro. Depois volte aqui (ou abra a página Agendamentos) para definir quando ele roda sozinho."/>
+                    </Grid>
+
+                    <!-- AVANÇADO -->
+                    <ScrollViewer x:Name="PanelAdvanced" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsAdvanced, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="Avançado"/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Pasta de segurança (opcional)"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding SafetyFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Pasta de segurança"/>
+                                <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,6" ctl:Icon.Data="{StaticResource IconFolder}" Command="{Binding BrowseSafetyCommand}" ToolTip="Procurar pasta"/>
+                            </Grid>
+                            <TextBlock Style="{StaticResource Hint}" Text="Vazio = pasta .SyncBackup dentro de cada lado (ignorada nas comparações)."/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Margin="0,16,0,4" Text="Segurança"/>
+                            <CheckBox Content="Guardar a versão anterior antes de sobrescrever" IsChecked="{Binding BackupBeforeOverwrite}" Margin="0,3"/>
+                            <CheckBox Content="Confirmar antes de excluir" IsChecked="{Binding ConfirmDeletes}" Margin="0,3"/>
+                            <CheckBox Content="Continuar quando um arquivo falhar" IsChecked="{Binding ContinueOnError}" Margin="0,3"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Exigir confirmação reforçada acima de (% de exclusões):" VerticalAlignment="Center" Width="340"/>
+                                <TextBox Width="60" Text="{Binding MassDeletePercent, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Margin="0,16,0,4" Text="Desempenho e rede"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Operações em paralelo (0 = automático):" VerticalAlignment="Center" Width="340"/>
+                                <TextBox Width="60" Text="{Binding MaxParallel, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Tentativas extras em erro temporário:" VerticalAlignment="Center" Width="340"/>
+                                <TextBox Width="60" Text="{Binding RetryCount, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Espera entre tentativas (ms):" VerticalAlignment="Center" Width="340"/>
+                                <TextBox Width="80" Text="{Binding RetryDelayMs, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="EditorCancelButton" Content="Cancelar" Padding="22,8" Command="{Binding CancelCommand}"/>
+            <Button x:Name="EditorSaveButton" Content="Salvar" Style="{StaticResource PrimaryButton}" Padding="28,8" Margin="0" Command="{Binding SaveCommand}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,101 @@
+<UserControl x:Class="SyncManager.Wpf.Views.Pages.ScheduleEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls">
+    <!-- Editor de agendamento reutilizável (página Agendamentos e seção do editor de perfil). DataContext = ScheduleViewModel. -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <Border Style="{StaticResource PanelBorder}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Quando executar"/>
+                    <!-- uma lista de opções exclusivas: cada linha é um RadioButton ligado à seleção -->
+                    <ListBox x:Name="KindList" ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind}" BorderThickness="0" Background="Transparent"
+                             Margin="0,6,0,8" AutomationProperties.Name="Tipo de agendamento">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <RadioButton Content="{Binding Label}" GroupName="ScheduleKind" Margin="0,3"
+                                             IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding ShowTime, Converter={StaticResource BoolToVis}}" Margin="0,4,0,8">
+                        <TextBlock Text="Horário (HH:mm):" VerticalAlignment="Center" Width="120"/>
+                        <TextBox Width="80" Text="{Binding Time, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" AutomationProperties.Name="Horário"/>
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding ShowWeekly, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
+                        <WrapPanel>
+                            <CheckBox Content="Seg" IsChecked="{Binding Monday}" Margin="0,0,14,0"/>
+                            <CheckBox Content="Ter" IsChecked="{Binding Tuesday}" Margin="0,0,14,0"/>
+                            <CheckBox Content="Qua" IsChecked="{Binding Wednesday}" Margin="0,0,14,0"/>
+                            <CheckBox Content="Qui" IsChecked="{Binding Thursday}" Margin="0,0,14,0"/>
+                            <CheckBox Content="Sex" IsChecked="{Binding Friday}" Margin="0,0,14,0"/>
+                            <CheckBox Content="Sáb" IsChecked="{Binding Saturday}" Margin="0,0,14,0"/>
+                            <CheckBox Content="Dom" IsChecked="{Binding Sunday}" Margin="0,0,14,0"/>
+                        </WrapPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="Segunda a sexta" Command="{Binding PresetWeekdaysCommand}" Padding="10,4"/>
+                            <Button Content="Todos os dias" Command="{Binding PresetAllCommand}" Padding="10,4"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding ShowInterval, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
+                        <TextBlock Text="A cada" VerticalAlignment="Center" Width="120"/>
+                        <TextBox Width="60" Text="{Binding Hours, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                        <TextBlock Text="hora(s)" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding ShowMonthly, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
+                        <TextBlock Text="Dia do mês:" VerticalAlignment="Center" Width="120"/>
+                        <ComboBox Width="180" ItemsSource="{Binding DaysOfMonth}" SelectedItem="{Binding SelectedDayOfMonth}" DisplayMemberPath="Label"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource PanelBorder}" Margin="0,10,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Ao entrar no Windows"/>
+                    <CheckBox Content="Executar automaticamente quando eu entrar no Windows" IsChecked="{Binding RunOnStartup}" Margin="0,6,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="22,8,0,0" IsEnabled="{Binding RunOnStartup}">
+                        <TextBlock Text="Aguardar" VerticalAlignment="Center"/>
+                        <TextBox Width="60" Margin="8,0" Text="{Binding DelayMinutes, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                        <TextBlock Text="minuto(s) depois do logon" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <CheckBox Content="Agendamento ativo" IsChecked="{Binding Enabled}" Margin="0,14,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource PanelBorder}" Margin="0,10,0,0" Background="{DynamicResource PrimarySoftBrush}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Resumo"/>
+                    <TextBlock Text="{Binding Preview}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding TaskStatus}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                    <TextBlock Text="{Binding Message}" FontWeight="SemiBold" Foreground="{DynamicResource SuccessTextBrush}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    <TextBlock Style="{StaticResource SmallMutedText}" TextWrapping="Wrap" Margin="0,8,0,0"
+                               Text="A execução é feita pelo Agendador de Tarefas do Windows, mesmo com o SyncManager fechado (enquanto você estiver conectado). Se o computador estava desligado no horário, a tarefa roda assim que possível. Execuções agendadas não pedem confirmação: planos que excluem muito do Target são abortados por segurança."/>
+                </StackPanel>
+            </Border>
+
+            <WrapPanel Margin="0,12,0,0">
+                <Button x:Name="SaveScheduleButton" Content="Salvar agendamento" Style="{StaticResource PrimaryButton}" Padding="18,8" Command="{Binding SaveCommand}"/>
+                <Button Content="Executar agora" Padding="16,8" Command="{Binding RunNowCommand}" ToolTip="Dispara a tarefa agendada agora, exatamente como o Windows faria."/>
+                <Button Content="Remover agendamento" Padding="16,8" Margin="0" Command="{Binding RemoveCommand}"/>
+            </WrapPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

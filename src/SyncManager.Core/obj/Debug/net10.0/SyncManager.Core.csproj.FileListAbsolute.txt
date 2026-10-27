@@ -1,0 +1,14 @@
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\bin\Debug\net10.0\SyncManager.Core.deps.json
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\bin\Debug\net10.0\SyncManager.Core.dll
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\bin\Debug\net10.0\SyncManager.Core.pdb
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\SyncManager.Core.GeneratedMSBuildEditorConfig.editorconfig
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\SyncManager.Core.AssemblyInfoInputs.cache
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\SyncManager.Core.AssemblyInfo.cs
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\SyncManager.Core.csproj.CoreCompileInputs.cache
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\SyncManager.Core.dll
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\refint\SyncManager.Core.dll
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\SyncManager.Core.pdb
+K:\Trabalho\Projetos\FileSync\src\SyncManager.Core\obj\Debug\net10.0\ref\SyncManager.Core.dll
+K:\Trabalho\Projetos\FileSync\.verify-out\SyncManager.Core.deps.json
+K:\Trabalho\Projetos\FileSync\.verify-out\SyncManager.Core.dll
+K:\Trabalho\Projetos\FileSync\.verify-out\SyncManager.Core.pdb

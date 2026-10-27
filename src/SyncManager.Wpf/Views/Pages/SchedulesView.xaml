@@ -1,0 +1,54 @@
+<UserControl x:Class="SyncManager.Wpf.Views.Pages.SchedulesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="clr-namespace:SyncManager.Wpf.Views.Pages">
+    <!-- Página "Agendamentos": um agendamento por perfil (Agendador de Tarefas do Windows). DataContext = MainViewModel (Profiles). -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
+
+    <Grid Margin="16,12,16,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Path Data="{StaticResource IconCalendar}" Width="36" Height="36" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource PageTitle}" Text="Agendamentos"/>
+                <TextBlock Style="{StaticResource PageSubtitle}" Text="Escolha um perfil e defina quando ele roda sozinho."/>
+            </StackPanel>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="320"/>
+                <ColumnDefinition Width="520"/>
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="SchedulesGrid" ItemsSource="{Binding Profiles.Rows}" SelectedItem="{Binding Profiles.Selected}" AutoGenerateColumns="False"
+                      IsReadOnly="True" SelectionMode="Single" RowHeight="30" AutomationProperties.Name="Perfis e agendamentos">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Perfil" Binding="{Binding Name}" Width="*" MinWidth="110"/>
+                    <DataGridTextColumn Header="Agendamento" Binding="{Binding ScheduleText}" Width="1.4*" MinWidth="140"/>
+                    <DataGridTextColumn Header="Próxima execução" Binding="{Binding NextRunText}" Width="140"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False"
+                        Visibility="{Binding Profiles.IsEmpty, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Nenhum perfil salvo" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                <TextBlock Text="Crie um perfil na página Perfis para poder agendá-lo." Style="{StaticResource MutedText}" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <Border Grid.Column="1" Margin="12,0,0,0" Visibility="{Binding Profiles.HasSelection, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding Profiles.Schedule.Title}" FontSize="15" FontWeight="Bold" Margin="0,0,0,2" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding Profiles.Schedule.ProfileSummary}" Style="{StaticResource MutedText}" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
+                    <pages:ScheduleEditorView DataContext="{Binding Profiles.Schedule}"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

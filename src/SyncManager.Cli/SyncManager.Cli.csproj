@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SyncManager.Core\SyncManager.Core.csproj" />
+    <ProjectReference Include="..\SyncManager.Application\SyncManager.Application.csproj" />
+    <ProjectReference Include="..\SyncManager.Infrastructure\SyncManager.Infrastructure.csproj" />
+    <ProjectReference Include="..\SyncManager.Persistence\SyncManager.Persistence.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>SyncManager.Cli</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\SyncManager.Wpf\Resources\app.ico</ApplicationIcon>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

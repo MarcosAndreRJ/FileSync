@@ -1,0 +1,85 @@
+<Window x:Class="SyncManager.Wpf.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls"
+        xmlns:pages="clr-namespace:SyncManager.Wpf.Views.Pages"
+        Title="{Binding WindowTitle}"
+        Width="1360" Height="900" MinWidth="1000" MinHeight="640"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+    <!-- Shell: menu superior + barra lateral de navegação + área de conteúdo (páginas). DataContext = MainViewModel. -->
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_Arquivo">
+                <MenuItem Header="_Novo perfil" Command="{Binding NewProfileCommand}"/>
+                <MenuItem Header="_Abrir perfil..." Command="{Binding ManageProfilesCommand}"/>
+                <MenuItem Header="_Salvar perfil" Command="{Binding SaveProfileCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Sair" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Perfis">
+                <MenuItem Header="_Gerenciar perfis..." Command="{Binding ManageProfilesCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Comparação">
+                <MenuItem Header="_Comparar / Recomparar" Command="{Binding CompareCommand}"/>
+                <MenuItem Header="_Visualizar plano" Command="{Binding PreviewCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Execução">
+                <MenuItem Header="_Executar" Command="{Binding ExecuteCommand}"/>
+                <MenuItem Header="_Cancelar" Command="{Binding CancelCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Histórico">
+                <MenuItem Header="_Execuções..." Command="{Binding ShowHistoryCommand}"/>
+                <MenuItem Header="_Logs" Command="{Binding ShowLogsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Ferramentas">
+                <MenuItem Header="_Agendamentos..." Command="{Binding ShowSchedulesCommand}"/>
+                <MenuItem Header="_Configurações..." Command="{Binding ShowSettingsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Ajuda">
+                <MenuItem Header="_Sobre" Command="{Binding AboutCommand}"/>
+            </MenuItem>
+        </Menu>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource SidebarBorder}" Width="200">
+                <StackPanel Margin="0,10,0,0">
+                    <Button x:Name="NavComparison" Style="{StaticResource NavButton}" Tag="{Binding ComparisonNavTag}" Content="Comparação"
+                            ctl:Icon.Data="{StaticResource IconCompare}" Command="{Binding ShowComparisonCommand}" ToolTip="Comparar e sincronizar pastas"/>
+                    <Button x:Name="NavProfiles" Style="{StaticResource NavButton}" Tag="{Binding ProfilesNavTag}" Content="Perfis"
+                            ctl:Icon.Data="{StaticResource IconProfiles}" Command="{Binding ManageProfilesCommand}"/>
+                    <Button x:Name="NavSchedules" Style="{StaticResource NavButton}" Tag="{Binding SchedulesNavTag}" Content="Agendamentos"
+                            ctl:Icon.Data="{StaticResource IconCalendar}" Command="{Binding ShowSchedulesCommand}"/>
+                    <Button x:Name="NavHistory" Style="{StaticResource NavButton}" Tag="{Binding HistoryNavTag}" Content="Histórico"
+                            ctl:Icon.Data="{StaticResource IconHistory}" Command="{Binding ShowHistoryCommand}"/>
+                    <Button x:Name="NavLogs" Style="{StaticResource NavButton}" Tag="{Binding LogsNavTag}" Content="Logs"
+                            ctl:Icon.Data="{StaticResource IconDocument}" Command="{Binding ShowLogsCommand}"/>
+                    <Button x:Name="NavSettings" Style="{StaticResource NavButton}" Tag="{Binding SettingsNavTag}" Content="Configurações"
+                            ctl:Icon.Data="{StaticResource IconSettings}" Command="{Binding ShowSettingsCommand}"/>
+                    <Button x:Name="NavHelp" Style="{StaticResource NavButton}" Content="Ajuda"
+                            ctl:Icon.Data="{StaticResource IconHelp}" Command="{Binding AboutCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Só uma página visível por vez. A comparação fica viva por trás: voltar não perde seleção, filtros nem rolagem. -->
+            <Grid Grid.Column="1">
+                <pages:ComparisonView x:Name="ComparisonPage" Visibility="{Binding IsComparisonScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:PlanView x:Name="PlanPage" Visibility="{Binding IsPlanScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:ExecutionView x:Name="ExecutionPage" Visibility="{Binding IsExecutionScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:ProfilesView x:Name="ProfilesPage" Visibility="{Binding IsProfilesScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:ProfileEditorView x:Name="ProfileEditorPage" Visibility="{Binding IsEditorScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:SchedulesView x:Name="SchedulesPage" Visibility="{Binding IsSchedulesScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:HistoryView x:Name="HistoryPage" Visibility="{Binding IsHistoryScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:LogsView x:Name="LogsPage" Visibility="{Binding IsLogsScreen, Converter={StaticResource BoolToVis}}"/>
+                <pages:SettingsView x:Name="SettingsPage" Visibility="{Binding IsSettingsScreen, Converter={StaticResource BoolToVis}}"/>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>

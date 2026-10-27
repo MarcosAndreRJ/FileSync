@@ -1,0 +1,29 @@
+<Window x:Class="SyncManager.Wpf.Views.DeleteChoiceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Excluir item(ns) da lista" Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="18">
+        <TextBlock x:Name="Heading" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        <TextBlock x:Name="Sample" Foreground="{StaticResource TextMuted}" TextTrimming="CharacterEllipsis" Margin="0,4,0,14"/>
+
+        <RadioButton x:Name="RemoveOnly" GroupName="choice" IsChecked="True" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock FontWeight="SemiBold" Text="Somente remover da lista"/>
+                <TextBlock Foreground="{StaticResource TextMuted}" TextWrapping="Wrap"
+                           Text="Não mexe em nenhum arquivo. O(s) item(ns) deixam de aparecer e não serão alterados na execução desta comparação."/>
+            </StackPanel>
+        </RadioButton>
+
+        <TextBlock Text="Excluir também fisicamente:" FontWeight="SemiBold" Margin="0,4,0,6"/>
+        <RadioButton x:Name="DelSource" GroupName="choice" Content="do Source" Margin="18,0,0,4"/>
+        <RadioButton x:Name="DelTarget" GroupName="choice" Content="do Target" Margin="18,0,0,4"/>
+        <RadioButton x:Name="DelBoth" GroupName="choice" Content="dos dois lados (Source e Target)" Margin="18,0,0,8"/>
+        <TextBlock x:Name="StrategyNote" Foreground="#B45309" TextWrapping="Wrap" Margin="18,0,0,0"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="OK" IsDefault="True" Style="{StaticResource PrimaryButton}" Width="90" Click="OnOk"/>
+            <Button Content="Cancelar" IsCancel="True" Width="90" Margin="0" Click="OnCancel"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -1,0 +1,89 @@
+<UserControl x:Class="SyncManager.Wpf.Views.Pages.HistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls">
+    <!-- Página "Histórico". DataContext = MainViewModel; o conteúdo vem de History (HistoryViewModel). -->
+    <Grid Margin="16,12,16,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="120"/>
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="100"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Path Data="{StaticResource IconHistory}" Width="36" Height="36" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource PageTitle}" Text="Histórico de execuções"/>
+                <TextBlock Style="{StaticResource PageSubtitle}" Text="Cada execução (manual ou agendada) fica registrada com seus resultados e arquivos."/>
+            </StackPanel>
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Perfil:" VerticalAlignment="Center" Margin="0,0,8,0" Style="{StaticResource MutedText}"/>
+                <ComboBox x:Name="HistoryProfileFilter" ItemsSource="{Binding History.ProfileNames}" SelectedItem="{Binding History.ProfileFilter}" MinWidth="230"
+                          AutomationProperties.Name="Filtro por perfil"/>
+                <Button Content="Atualizar" Margin="8,0,0,0" Padding="14,7" ctl:Icon.Data="{StaticResource IconSync}" ctl:Icon.Size="16" Command="{Binding History.RefreshCommand}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="RerunButton" Content="Executar novamente" Padding="16,7" ctl:Icon.Data="{StaticResource IconPlay}" ctl:Icon.Size="16" Command="{Binding History.RerunCommand}"
+                        ToolTip="Abre o fluxo normal do perfil desta execução: compara, mostra o plano e só então pede a confirmação."/>
+                <Button Content="Abrir pasta de segurança" Padding="16,7" ctl:Icon.Data="{StaticResource IconFolder}" ctl:Icon.Size="16" Command="{Binding History.OpenSafetyFolderCommand}"
+                        ToolTip="Abre a pasta onde ficaram os arquivos excluídos/sobrescritos da execução selecionada."/>
+                <Button Content="Abrir pasta de logs" Padding="16,7" Margin="0" ctl:Icon.Data="{StaticResource IconDocument}" ctl:Icon.Size="16" Command="{Binding History.OpenLogsCommand}"/>
+            </StackPanel>
+        </Grid>
+
+        <DataGrid x:Name="HistoryGrid" Grid.Row="2" ItemsSource="{Binding History.View}" SelectedItem="{Binding History.Selected}" AutoGenerateColumns="False"
+                  IsReadOnly="True" SelectionMode="Single" RowHeight="28" EnableRowVirtualization="True" AutomationProperties.Name="Execuções">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Início" Binding="{Binding StartedText}" Width="140"/>
+                <DataGridTextColumn Header="Perfil" Binding="{Binding ProfileName}" Width="*" MinWidth="110"/>
+                <DataGridTemplateColumn Header="Resultado" Width="180">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Copiados" Binding="{Binding Copied}" Width="70"/>
+                <DataGridTextColumn Header="Atualiz." Binding="{Binding Updated}" Width="65"/>
+                <DataGridTextColumn Header="Excluídos" Binding="{Binding Deleted}" Width="70"/>
+                <DataGridTextColumn Header="Ignorados" Binding="{Binding Skipped}" Width="75"/>
+                <DataGridTextColumn Header="Conflitos" Binding="{Binding Conflicts}" Width="70"/>
+                <DataGridTextColumn Header="Erros" Binding="{Binding Errors}" Width="55"/>
+                <DataGridTextColumn Header="Avisos" Binding="{Binding Warnings}" Width="55"/>
+                <DataGridTextColumn Header="Dados" Binding="{Binding BytesText}" Width="85"/>
+                <DataGridTextColumn Header="Duração" Binding="{Binding DurationText}" Width="75"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <GridSplitter Grid.Row="3" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+        <TextBlock Grid.Row="4" Text="{Binding History.DetailTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,2,0,6"/>
+
+        <DataGrid x:Name="HistoryItemsGrid" Grid.Row="5" ItemsSource="{Binding History.Items}" AutoGenerateColumns="False" IsReadOnly="True" RowHeight="26"
+                  EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling" AutomationProperties.Name="Itens da execução">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Operação" Binding="{Binding Operation}" Width="120"/>
+                <DataGridTextColumn Header="Caminho" Binding="{Binding Path}" Width="*" MinWidth="160"/>
+                <DataGridTemplateColumn Header="Resultado" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Outcome}" Foreground="{Binding Brush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Mensagem" Binding="{Binding Message}" Width="340"/>
+                <DataGridTextColumn Header="Tamanho" Binding="{Binding Size}" Width="90"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>
