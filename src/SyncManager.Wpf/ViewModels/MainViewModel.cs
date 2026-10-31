@@ -187,7 +187,7 @@ public sealed class MainViewModel : ObservableObject
         {
             var profile = BuildProfile();
             if (_profileId > 0) profile.Id = _profileId;
-            await OpenEditorAsync(profile, EditorSection.General);
+            await OpenEditorWindowAsync(profile, EditorSection.General);
         });
         ClearProfileCommand = new RelayCommand(ClearProfileData);
 
@@ -527,8 +527,18 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task RefreshSettingsAsync() => _confirmBeforeExecute = (await _settings.LoadAsync()).ConfirmBeforeExecute;
 
-    /// <summary>Abre o editor de perfil em janela dedicada (ProfileWindow).</summary>
+    /// <summary>Abre o editor de perfil (novo ou existente) numa seção.</summary>
     public async Task OpenEditorAsync(SyncProfile profile, EditorSection section = EditorSection.General)
+    {
+        if (!GoTo(AppScreen.ProfileEditor)) return;
+        var editor = _services.GetRequiredService<ProfileEditorViewModel>();
+        editor.Closed += async saved => await OnEditorClosedAsync(saved);
+        Editor = editor;
+        await editor.LoadAsync(profile, section);
+    }
+
+    /// <summary>Abre o editor de perfil em janela dedicada (ProfileWindow).</summary>
+    public async Task OpenEditorWindowAsync(SyncProfile profile, EditorSection section = EditorSection.General)
     {
         var editor = _services.GetRequiredService<ProfileEditorViewModel>();
         await editor.LoadAsync(profile, section);

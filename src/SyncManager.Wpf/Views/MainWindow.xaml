@@ -30,25 +30,25 @@
 
                 <!-- Navegação principal e ferramentas secundárias -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Style="{StaticResource NavButton}" Content="Comparação" Command="{Binding ShowComparisonCommand}"
+                    <Button x:Name="NavComparison" Style="{StaticResource NavButton}" Content="Comparação" Command="{Binding ShowComparisonCommand}"
                             Tag="{Binding ComparisonNavTag}" Padding="12,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconCompare}"
                             ToolTip="Comparar e sincronizar pastas"/>
-                    <Button Style="{StaticResource NavButton}" Content="Perfis" Command="{Binding ManageProfilesCommand}"
+                    <Button x:Name="NavProfiles" Style="{StaticResource NavButton}" Content="Perfis" Command="{Binding ManageProfilesCommand}"
                             Tag="{Binding ProfilesNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconProfiles}"
                             ToolTip="Gerenciar perfis salvos"/>
-                    <Button Style="{StaticResource NavButton}" Content="Histórico" Command="{Binding ShowHistoryCommand}"
+                    <Button x:Name="NavHistory" Style="{StaticResource NavButton}" Content="Histórico" Command="{Binding ShowHistoryCommand}"
                             Tag="{Binding HistoryNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconHistory}"
                             ToolTip="Histórico de execuções"/>
-                    <Button Style="{StaticResource NavButton}" Content="Logs" Command="{Binding ShowLogsCommand}"
+                    <Button x:Name="NavLogs" Style="{StaticResource NavButton}" Content="Logs" Command="{Binding ShowLogsCommand}"
                             Tag="{Binding LogsNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconDocument}"
                             ToolTip="Visualizar logs do sistema"/>
-                    <Button Style="{StaticResource NavButton}" Content="Agendamentos" Command="{Binding ShowSchedulesCommand}"
+                    <Button x:Name="NavSchedules" Style="{StaticResource NavButton}" Content="Agendamentos" Command="{Binding ShowSchedulesCommand}"
                             Tag="{Binding SchedulesNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconCalendar}"
                             ToolTip="Agendamentos automáticos"/>
-                    <Button Style="{StaticResource NavButton}" Content="Configurações" Command="{Binding ShowSettingsCommand}"
+                    <Button x:Name="NavSettings" Style="{StaticResource NavButton}" Content="Configurações" Command="{Binding ShowSettingsCommand}"
                             Tag="{Binding SettingsNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconSettings}"
                             ToolTip="Configurações globais"/>
-                    <Button Style="{StaticResource NavButton}" Content="Ajuda" Command="{Binding AboutCommand}"
+                    <Button x:Name="NavHelp" Style="{StaticResource NavButton}" Content="Ajuda" Command="{Binding AboutCommand}"
                             Padding="10,5" Margin="0,0,0,0" ctl:Icon.Data="{StaticResource IconHelp}"
                             ToolTip="Sobre o FileSync"/>
                 </StackPanel>
