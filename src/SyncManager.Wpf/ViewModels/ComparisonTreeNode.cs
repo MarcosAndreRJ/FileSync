@@ -3,12 +3,13 @@ using System.ComponentModel;
 using System.Windows.Media;
 using SyncManager.Core.Enums;
 using SyncManager.Core.Models;
+using SyncManager.Wpf.Mvvm;
 
 namespace SyncManager.Wpf.ViewModels;
 
 /// <summary>
 /// Representa uma linha compartilhada na visualização dual alinhada (Source / Target),
-/// com suporte a hierarquia, expansão/recolhimento e virtualização.
+/// com suporte a hierarquia, expansão/recolhimento e virtualização no WPF.
 /// </summary>
 public sealed class ComparisonTreeNode : INotifyPropertyChanged
 {
@@ -16,6 +17,8 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
     private bool _isVisible = true;
     private bool? _isChecked = true;
     private bool _isSelected;
+    private bool _sourceExists;
+    private bool _targetExists;
 
     public ComparisonTreeNode(
         string relativePath,
@@ -34,8 +37,13 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
         Operations = operations ?? Array.Empty<SyncOperation>();
         Parent = parent;
 
+        ToggleExpandCommand = new RelayCommand(ToggleExpand);
+
         if (item is not null)
         {
+            _sourceExists = item.SourceExists;
+            _targetExists = item.TargetExists;
+
             var (glyph, text, color) = Presentation.Status(item.Status);
             StatusGlyph = glyph;
             StatusKey = item.Status.ToString();
@@ -56,13 +64,11 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
                 CanInclude = false;
             }
 
-            SourceSizeText = !item.SourceExists ? "" : isDirectory ? "‹pasta›" : Presentation.Bytes(item.SourceSize ?? 0);
-            TargetSizeText = !item.TargetExists ? "" : isDirectory ? "‹pasta›" : Presentation.Bytes(item.TargetSize ?? 0);
-            SourceModifiedText = Presentation.Date(item.SourceModified);
-            TargetModifiedText = Presentation.Date(item.TargetModified);
+            SourceSizeText = !item.SourceExists ? "—" : isDirectory ? "—" : Presentation.Bytes(item.SourceSize ?? 0);
+            TargetSizeText = !item.TargetExists ? "—" : isDirectory ? "—" : Presentation.Bytes(item.TargetSize ?? 0);
+            SourceModifiedText = !item.SourceExists ? "—" : Presentation.Date(item.SourceModified);
+            TargetModifiedText = !item.TargetExists ? "—" : Presentation.Date(item.TargetModified);
 
-            SourceExists = item.SourceExists;
-            TargetExists = item.TargetExists;
             IsConflict = Operations.Any(o => o.Type == SyncOperationType.Conflict);
 
             RowKind = IsConflict ? "conflict"
@@ -70,22 +76,56 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
                     : Operations.Any(o => o.Type is SyncOperationType.Delete or SyncOperationType.DeleteDirectory) ? "delete"
                     : Operations.Any(o => o.IsExecutable) ? "change" : "none";
 
+            // Símbolo compacto para a coluna central Status dos mockups
+            StatusSymbol = ComputeStatusSymbol(item.Status, Operations);
+
             _isChecked = CanInclude;
         }
         else
         {
-            // Nó de pasta intermediária sintética (apenas para organizar hierarquia)
-            StatusGlyph = "";
-            StatusKey = "None";
-            StatusText = "";
+            // Nó de pasta intermediária sintética
+            _sourceExists = true;
+            _targetExists = true;
+            StatusGlyph = "=";
+            StatusKey = "Identical";
+            StatusText = "Pasta";
             StatusBrush = Presentation.Gray;
             ActionText = "";
             ActionBrush = Presentation.Gray;
+            StatusSymbol = "=";
             CanInclude = true;
-            SourceExists = true;
-            TargetExists = true;
             RowKind = "none";
+            SourceSizeText = "—";
+            TargetSizeText = "—";
+            SourceModifiedText = "—";
+            TargetModifiedText = "—";
         }
+    }
+
+    private static string ComputeStatusSymbol(ComparisonStatus status, IReadOnlyList<SyncOperation> ops)
+    {
+        if (ops.Any(o => o.Type == SyncOperationType.Conflict)) return "⚠";
+        if (status == ComparisonStatus.Error) return "✖";
+        if (ops.Any(o => o.Type is SyncOperationType.Delete or SyncOperationType.DeleteDirectory)) return "✖";
+
+        var copyOrUpdate = ops.FirstOrDefault(o => o.Type is SyncOperationType.Copy or SyncOperationType.Update or SyncOperationType.CreateDirectory);
+        if (copyOrUpdate is not null)
+        {
+            return copyOrUpdate.To == FileSide.Source ? "←" : "→";
+        }
+
+        return status switch
+        {
+            ComparisonStatus.Identical => "=",
+            ComparisonStatus.SourceOnly => "→",
+            ComparisonStatus.TargetOnly => "←",
+            ComparisonStatus.SourceNewer => "→",
+            ComparisonStatus.TargetNewer => "←",
+            ComparisonStatus.DifferentSize or ComparisonStatus.DifferentContent => "≠",
+            ComparisonStatus.Conflict => "⚠",
+            ComparisonStatus.Error => "✖",
+            _ => "="
+        };
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -93,15 +133,30 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
     public string RelativePath { get; }
     public string Name { get; }
     public int Depth { get; }
-    public double Indent => Depth * 16.0;
+    public double Indent => Depth * 18.0;
+    public System.Windows.Thickness IndentMargin => new(Depth * 18.0, 0, 0, 0);
     public bool IsDirectory { get; }
+    public System.Windows.FontWeight FontWeight => IsDirectory ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal;
     public ComparisonItem? Item { get; }
     public IReadOnlyList<SyncOperation> Operations { get; }
     public ComparisonTreeNode? Parent { get; }
     public List<ComparisonTreeNode> Children { get; } = new();
 
-    public bool SourceExists { get; }
-    public bool TargetExists { get; }
+    public bool SourceExists
+    {
+        get => _sourceExists;
+        internal set { _sourceExists = value; OnPropertyChanged(nameof(SourceExists)); OnPropertyChanged(nameof(SourceNameDisplay)); }
+    }
+
+    public bool TargetExists
+    {
+        get => _targetExists;
+        internal set { _targetExists = value; OnPropertyChanged(nameof(TargetExists)); OnPropertyChanged(nameof(TargetNameDisplay)); }
+    }
+
+    public string SourceNameDisplay => SourceExists ? Name : "—";
+    public string TargetNameDisplay => TargetExists ? Name : "—";
+
     public bool IsConflict { get; }
     public string RowKind { get; }
 
@@ -109,18 +164,26 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
     public string StatusKey { get; }
     public string StatusText { get; }
     public Brush StatusBrush { get; }
+    public string StatusSymbol { get; internal set; }
 
     public string ActionText { get; }
     public Brush ActionBrush { get; }
 
-    public string SourceSizeText { get; } = "";
-    public string TargetSizeText { get; } = "";
-    public string SourceModifiedText { get; } = "";
-    public string TargetModifiedText { get; } = "";
+    public string SourceSizeText { get; }
+    public string TargetSizeText { get; }
+    public string SourceModifiedText { get; }
+    public string TargetModifiedText { get; }
 
     public bool CanInclude { get; }
 
     public bool HasChildren => Children.Count > 0;
+
+    public RelayCommand ToggleExpandCommand { get; }
+
+    private void ToggleExpand()
+    {
+        if (IsDirectory) IsExpanded = !IsExpanded;
+    }
 
     public bool IsExpanded
     {
@@ -160,7 +223,7 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Tri-state para pastas; booleano para arquivos.
+    /// Tri-state para pastas; booleano para arquivos executáveis.
     /// </summary>
     public bool? IsChecked
     {
@@ -186,6 +249,8 @@ public sealed class ComparisonTreeNode : INotifyPropertyChanged
         _isChecked = value;
         OnPropertyChanged(nameof(IsChecked));
     }
+
+    internal void UpdateCheckFromChildrenDirect() => UpdateCheckFromChildren();
 
     private void UpdateCheckFromChildren()
     {

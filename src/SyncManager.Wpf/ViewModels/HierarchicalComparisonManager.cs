@@ -5,9 +5,21 @@ using SyncManager.Core.Planning;
 
 namespace SyncManager.Wpf.ViewModels;
 
+public enum ComparisonTreeFilter
+{
+    All,
+    Different,
+    Identical,
+    SourceOnly,
+    TargetOnly,
+    Conflict,
+    Error,
+    Checked
+}
+
 /// <summary>
 /// Constrói a árvore hierárquica compartilhada e projeta a coleção linearizada de linhas visíveis
-/// com suporte total a expansão, recolhimento, filtros e virtualização de interface WPF.
+/// com suporte total a expansão, recolhimento, filtros combináveis e virtualização de interface WPF.
 /// </summary>
 public sealed class HierarchicalComparisonManager
 {
@@ -15,22 +27,57 @@ public sealed class HierarchicalComparisonManager
     private readonly Dictionary<string, ComparisonTreeNode> _nodeByPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _hiddenPaths = new(StringComparer.OrdinalIgnoreCase);
 
+    private ComparisonTreeFilter _activeFilter = ComparisonTreeFilter.All;
+    private string _searchText = "";
+
     public ObservableCollection<ComparisonTreeNode> FlatVisibleRows { get; } = new();
 
     public event Action? StructureOrFilterChanged;
     public event Action? CheckChanged;
+
+    public ComparisonTreeFilter ActiveFilter
+    {
+        get => _activeFilter;
+        set
+        {
+            if (_activeFilter != value)
+            {
+                _activeFilter = value;
+                RebuildFlatList();
+            }
+        }
+    }
+
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            var clean = (value ?? "").Trim();
+            if (!string.Equals(_searchText, clean, StringComparison.OrdinalIgnoreCase))
+            {
+                _searchText = clean;
+                if (!string.IsNullOrEmpty(_searchText))
+                {
+                    AutoExpandMatchingParents();
+                }
+                RebuildFlatList();
+            }
+        }
+    }
 
     public void Build(SyncPlan plan, IEnumerable<ItemRow>? rows = null)
     {
         _rootNodes.Clear();
         _nodeByPath.Clear();
         FlatVisibleRows.Clear();
+        _hiddenPaths.Clear();
 
         var opsByPath = plan.Operations
             .GroupBy(o => o.RelativePath, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<SyncOperation>)g.ToList(), StringComparer.OrdinalIgnoreCase);
 
-        // Agrupa todos os itens de comparação
+        // Todos os itens da comparação
         var allItems = plan.Operations
             .Select(o => o.Item)
             .DistinctBy(i => i.RelativePath, StringComparer.OrdinalIgnoreCase)
@@ -42,7 +89,66 @@ public sealed class HierarchicalComparisonManager
             EnsurePathNode(item.RelativePath, item.IsDirectory, item, opsByPath.GetValueOrDefault(item.RelativePath));
         }
 
+        // Propagar existência de Source e Target para as pastas pai
+        PropagateFolderExistence();
+
+        // Atualizar estado tri-state de todas as pastas
+        UpdateAllFolderChecks();
+
         RebuildFlatList();
+    }
+
+    private void PropagateFolderExistence()
+    {
+        foreach (var node in _nodeByPath.Values.Where(n => n.IsDirectory))
+        {
+            bool hasSource = HasSourceRecursive(node);
+            bool hasTarget = HasTargetRecursive(node);
+            node.SourceExists = hasSource;
+            node.TargetExists = hasTarget;
+
+            if (node.Item is null)
+            {
+                if (hasSource && !hasTarget)
+                {
+                    node.StatusSymbol = "→";
+                }
+                else if (!hasSource && hasTarget)
+                {
+                    node.StatusSymbol = "←";
+                }
+                else
+                {
+                    node.StatusSymbol = "=";
+                }
+            }
+        }
+    }
+
+    private void UpdateAllFolderChecks()
+    {
+        // Pastas mais profundas primeiro para propagar para cima
+        var dirs = _nodeByPath.Values
+            .Where(n => n.IsDirectory)
+            .OrderByDescending(n => n.Depth)
+            .ToList();
+
+        foreach (var dir in dirs)
+        {
+            dir.UpdateCheckFromChildrenDirect();
+        }
+    }
+
+    private static bool HasSourceRecursive(ComparisonTreeNode node)
+    {
+        if (node.Item is not null && node.Item.SourceExists) return true;
+        return node.Children.Any(HasSourceRecursive);
+    }
+
+    private static bool HasTargetRecursive(ComparisonTreeNode node)
+    {
+        if (node.Item is not null && node.Item.TargetExists) return true;
+        return node.Children.Any(HasTargetRecursive);
     }
 
     private ComparisonTreeNode EnsurePathNode(string relativePath, bool isDirectory, ComparisonItem? item, IReadOnlyList<SyncOperation>? ops)
@@ -104,9 +210,33 @@ public sealed class HierarchicalComparisonManager
         RebuildFlatList();
     }
 
+    private void AutoExpandMatchingParents()
+    {
+        foreach (var node in _nodeByPath.Values.Where(n => !n.IsDirectory))
+        {
+            if (node.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                node.RelativePath.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+            {
+                var p = node.Parent;
+                while (p is not null)
+                {
+                    p.IsExpanded = true;
+                    p = p.Parent;
+                }
+            }
+        }
+    }
+
     public void HideNode(ComparisonTreeNode node)
     {
         _hiddenPaths.Add(node.RelativePath);
+        RebuildFlatList();
+    }
+
+    public void HideNodes(IEnumerable<ComparisonTreeNode> nodes)
+    {
+        foreach (var n in nodes)
+            _hiddenPaths.Add(n.RelativePath);
         RebuildFlatList();
     }
 
@@ -118,7 +248,71 @@ public sealed class HierarchicalComparisonManager
 
     public int HiddenCount => _hiddenPaths.Count;
 
-    public void RebuildFlatList(Func<ComparisonTreeNode, bool>? filter = null)
+    public void SetAllChecked(bool isChecked)
+    {
+        foreach (var root in _rootNodes)
+        {
+            root.IsChecked = isChecked;
+        }
+        CheckChanged?.Invoke();
+    }
+
+    public HashSet<string> GetIncludedRelativePaths()
+    {
+        return _nodeByPath.Values
+            .Where(n => !n.IsDirectory && n.CanInclude && n.IsChecked == true)
+            .Select(n => n.RelativePath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    // Contadores para o resumo compacto
+    public int TotalAnalyzed => _nodeByPath.Values.Count(n => !n.IsDirectory);
+    public int IdenticalCount => _nodeByPath.Values.Count(n => !n.IsDirectory && (n.Item?.Status == ComparisonStatus.Identical));
+    public int DifferentCount => _nodeByPath.Values.Count(n => !n.IsDirectory && n.Item is not null && n.Item.Status != ComparisonStatus.Identical);
+    public int SourceOnlyCount => _nodeByPath.Values.Count(n => !n.IsDirectory && n.Item?.Status == ComparisonStatus.SourceOnly);
+    public int TargetOnlyCount => _nodeByPath.Values.Count(n => !n.IsDirectory && n.Item?.Status == ComparisonStatus.TargetOnly);
+    public int ConflictCount => _nodeByPath.Values.Count(n => !n.IsDirectory && (n.IsConflict || n.Item?.Status == ComparisonStatus.Conflict));
+    public int ErrorCount => _nodeByPath.Values.Count(n => !n.IsDirectory && n.Item?.Status == ComparisonStatus.Error);
+    public int ExecutableCheckedCount => _nodeByPath.Values.Count(n => !n.IsDirectory && n.CanInclude && n.IsChecked == true);
+
+    private bool NodeMatchesFilter(ComparisonTreeNode node)
+    {
+        // Se houver busca por texto, o nome ou caminho relativo deve bater
+        if (_searchText.Length > 0 &&
+            !node.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) &&
+            !node.RelativePath.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+        {
+            // Se for pasta, pode ser que algum filho combine
+            if (node.IsDirectory && node.Children.Any(NodeMatchesFilter))
+                return true;
+            return false;
+        }
+
+        if (_activeFilter == ComparisonTreeFilter.All)
+            return true;
+
+        if (node.IsDirectory)
+        {
+            // Pastas são exibidas se elas mesmas combinarem ou se tiverem filhos que combinam
+            return node.Children.Any(NodeMatchesFilter);
+        }
+
+        var status = node.Item?.Status ?? ComparisonStatus.Identical;
+
+        return _activeFilter switch
+        {
+            ComparisonTreeFilter.Different => status != ComparisonStatus.Identical,
+            ComparisonTreeFilter.Identical => status == ComparisonStatus.Identical,
+            ComparisonTreeFilter.SourceOnly => status == ComparisonStatus.SourceOnly,
+            ComparisonTreeFilter.TargetOnly => status == ComparisonStatus.TargetOnly,
+            ComparisonTreeFilter.Conflict => node.IsConflict || status == ComparisonStatus.Conflict,
+            ComparisonTreeFilter.Error => status == ComparisonStatus.Error,
+            ComparisonTreeFilter.Checked => node.IsChecked == true,
+            _ => true
+        };
+    }
+
+    public void RebuildFlatList()
     {
         FlatVisibleRows.Clear();
 
@@ -127,9 +321,8 @@ public sealed class HierarchicalComparisonManager
             if (_hiddenPaths.Contains(node.RelativePath))
                 return;
 
-            bool matches = filter is null || filter(node);
+            bool matches = NodeMatchesFilter(node);
 
-            // Se for arquivo ou pasta que combina com o filtro, adicionamos
             if (matches)
             {
                 FlatVisibleRows.Add(node);

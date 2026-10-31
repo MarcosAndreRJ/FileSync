@@ -2,406 +2,504 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls">
-    <!-- Página "Comparação". DataContext = MainViewModel (herdado do shell). -->
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-
-        <!-- Ícone vetorial do status escolhido por DataTrigger sobre ItemRow.StatusKey (sem conversor por célula) -->
-        <Style x:Key="StatusIconPath" TargetType="Path">
-            <Setter Property="Data" Value="{StaticResource IconCheck}"/>
-            <Setter Property="Stretch" Value="Uniform"/>
-            <Setter Property="Width" Value="15"/>
-            <Setter Property="Height" Value="15"/>
-            <Setter Property="Margin" Value="0,0,7,0"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding StatusKey}" Value="SourceOnly"><Setter Property="Data" Value="{StaticResource IconArrowRight}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="TargetOnly"><Setter Property="Data" Value="{StaticResource IconArrowLeft}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="SourceNewer"><Setter Property="Data" Value="{StaticResource IconArrowUp}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="TargetNewer"><Setter Property="Data" Value="{StaticResource IconArrowDown}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="DifferentSize"><Setter Property="Data" Value="{StaticResource IconCompare}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="DifferentContent"><Setter Property="Data" Value="{StaticResource IconCompare}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="Conflict"><Setter Property="Data" Value="{StaticResource IconWarning}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="Error"><Setter Property="Data" Value="{StaticResource IconError}"/></DataTrigger>
-                <DataTrigger Binding="{Binding StatusKey}" Value="Ignored"><Setter Property="Data" Value="{StaticResource IconBlock}"/></DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Linha da comparação: realce suave pela ação prevista (a cor é só reforço; ícone e texto dizem o mesmo) -->
-        <Style x:Key="ComparisonRow" TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
-            <Setter Property="ToolTip" Value="{Binding Tooltip}"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding RowKind}" Value="change"><Setter Property="Background" Value="{DynamicResource SourceTintBrush}"/></DataTrigger>
-                <DataTrigger Binding="{Binding RowKind}" Value="delete"><Setter Property="Background" Value="{DynamicResource DangerSoftBrush}"/></DataTrigger>
-                <DataTrigger Binding="{Binding RowKind}" Value="conflict"><Setter Property="Background" Value="{DynamicResource WarningSoftBrush}"/></DataTrigger>
-                <DataTrigger Binding="{Binding RowKind}" Value="error"><Setter Property="Background" Value="{DynamicResource DangerSoftBrush}"/></DataTrigger>
-                <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#D6E6FF"/></Trigger>
-            </Style.Triggers>
-        </Style>
 
         <Style x:Key="RightAligned" TargetType="TextBlock">
             <Setter Property="TextAlignment" Value="Right"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
         </Style>
+
+        <!-- Botão discreto de chevron para expansão na árvore -->
+        <Style x:Key="ChevronToggleBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="Margin" Value="0,0,3,0"/>
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botão de filtro tipo Pill -->
+        <Style x:Key="FilterPillButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="14" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimarySoftBrush}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="active">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Indicador de resumo em cartão compacto -->
+        <Style x:Key="IndicatorCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
     </UserControl.Resources>
 
-    <Grid Margin="16,12,16,12">
+    <Grid Margin="16,10,16,10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>   <!-- 0 cabeçalho -->
-            <RowDefinition Height="Auto"/>   <!-- 1 Source / trocar / Target -->
-            <RowDefinition Height="Auto"/>   <!-- 2 ações + opções rápidas -->
-            <RowDefinition Height="Auto"/>   <!-- 4 opções avançadas (expansível) -->
-            <RowDefinition Height="Auto"/>   <!-- 5 resumo -->
-            <RowDefinition Height="Auto"/>   <!-- 6 abas + filtros -->
-            <RowDefinition Height="Auto"/>   <!-- 7 barra de conflitos -->
-            <RowDefinition Height="*" MinHeight="100"/>   <!-- 7 lista -->
-            <RowDefinition Height="Auto"/>   <!-- 9 progresso -->
-            <RowDefinition Height="Auto"/>   <!-- 10 log e resultado -->
+            <RowDefinition Height="Auto"/>   <!-- 0: Configuração Rápida do Topo -->
+            <RowDefinition Height="Auto"/>   <!-- 1: Barra compacta de indicadores -->
+            <RowDefinition Height="Auto"/>   <!-- 2: Filtros (Pills) e Busca -->
+            <RowDefinition Height="*" MinHeight="250"/>   <!-- 3: Comparação em Dois Painéis Sincronizados -->
+            <RowDefinition Height="Auto"/>   <!-- 4: Progresso e Detalhes da Execução -->
         </Grid.RowDefinitions>
 
-        <!-- 0. CABEÇALHO -->
-        <Grid Grid.Row="0" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
-                <Path Data="{StaticResource IconCompare}" Width="36" Height="36" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Style="{StaticResource PageTitle}" Text="Comparação e Sincronização"/>
-                    <TextBlock Style="{StaticResource PageSubtitle}" Text="Compare pastas, visualize as diferenças e sincronize seus arquivos com segurança."/>
-                </StackPanel>
-            </StackPanel>
-            <StackPanel Grid.Column="1" HorizontalAlignment="Right" IsEnabled="{Binding IsIdle}">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <TextBlock Text="Método de sincronização:" VerticalAlignment="Center" Margin="0,0,10,0" Style="{StaticResource MutedText}"/>
-                    <ComboBox Width="290" ItemsSource="{Binding Methods}" SelectedItem="{Binding SelectedMethod}" DisplayMemberPath="Label"
-                              ToolTip="{Binding MethodDescription}" ToolTipService.ShowDuration="30000"
-                              AutomationProperties.Name="Método de sincronização"/>
-                    <!-- A descrição completa do método (inclusive o que ele exclui!) fica neste "?" e no tooltip do seletor -->
-                    <Border Background="Transparent" Margin="8,0,0,0" Cursor="Help" VerticalAlignment="Center"
-                            ToolTipService.ShowDuration="30000" ToolTipService.InitialShowDelay="100" ToolTip="{Binding MethodDescription}">
-                        <Path Data="{StaticResource IconHelp}" Width="20" Height="20" Stretch="Uniform" Fill="{DynamicResource TextSecondaryBrush}"/>
-                    </Border>
-                </StackPanel>
-            </StackPanel>
-        </Grid>
+        <!-- 0. CONFIGURAÇÃO RÁPIDA (CONFORME MOCKUP 1) -->
+        <Border Grid.Row="0" Style="{StaticResource PanelBorder}" Padding="12,10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <!-- 1. SOURCE  ⇄  TARGET -->
-        <Grid Grid.Row="1" IsEnabled="{Binding IsIdle}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <ctl:FolderSelector Grid.Column="0" x:Name="SourceSelector" Header="Source (Origem)"
-                                FolderPath="{Binding SourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                BrowseCommand="{Binding BrowseSourceCommand}" DropCommand="{Binding DropSourceCommand}"
-                                CardStyle="{StaticResource SourceCard}" AccentBrush="{DynamicResource PrimaryBrush}"/>
-            <Button Grid.Column="1" x:Name="SwapButton" Margin="10,0" Padding="10,8" VerticalAlignment="Center"
-                    ctl:Icon.Data="{StaticResource IconSwap}" ctl:Icon.Size="20" Command="{Binding SwapSidesCommand}"
-                    ToolTip="Trocar Source e Target" AutomationProperties.Name="Trocar lados"/>
-            <ctl:FolderSelector Grid.Column="2" x:Name="TargetSelector" Header="Target (Destino)"
-                                FolderPath="{Binding TargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                BrowseCommand="{Binding BrowseTargetCommand}" DropCommand="{Binding DropTargetCommand}"
-                                CardStyle="{StaticResource TargetCard}" AccentBrush="{DynamicResource SuccessBrush}"/>
-        </Grid>
+                <!-- Linha 1: Perfil Ativo | Método de Sincronização | Botão Configurações -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-        <!-- 2. AÇÕES  +  OPÇÕES RÁPIDAS (mesma linha para economizar altura) -->
-        <Grid Grid.Row="2" Margin="0,12,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
-                <Button Content="Comparar" Style="{StaticResource PrimaryButton}" Padding="22,8" MinWidth="130"
-                        ctl:Icon.Data="{StaticResource IconSearch}" Command="{Binding CompareCommand}"/>
-                <Button Content="Visualizar plano" Padding="18,8" ctl:Icon.Data="{StaticResource IconDocument}" Command="{Binding PreviewCommand}"/>
-                <Button Content="Executar" Style="{StaticResource SuccessButton}" Padding="22,8" MinWidth="120"
-                        ctl:Icon.Data="{StaticResource IconPlay}" Command="{Binding ExecuteCommand}"/>
-                <Button Content="Cancelar" Padding="18,8" Command="{Binding CancelCommand}"/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" IsEnabled="{Binding IsIdle}">
-                <CheckBox Content="Incluir subpastas" IsChecked="{Binding IncludeSubfolders}" Margin="0,0,18,0"/>
-                <CheckBox Content="Verificar conteúdo (hash SHA-256)" IsChecked="{Binding VerifyByHash}" Margin="0,0,18,0"/>
-                <Button Content="Mais opções..." Margin="0" ctl:Icon.Data="{StaticResource IconSettings}" ctl:Icon.Size="16" Click="OnToggleOptions"/>
-            </StackPanel>
-        </Grid>
-
-            <Expander x:Name="OptionsExpander" Grid.Row="3" Header="Perfil, opções avançadas e filtros" Margin="0,10,0,0" IsEnabled="{Binding IsIdle}">
-                <StackPanel Margin="0,6,0,0">
-                <!-- Perfil: nome + salvar (também em Arquivo › Salvar perfil e na página Perfis) -->
-                <Border Style="{StaticResource PanelBorder}" Margin="0,0,0,8" Padding="12,8">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Perfil:" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold"/>
-                        <TextBox Width="260" Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="Nome do perfil. Preencha e use Salvar perfil para guardar as pastas e opções atuais."
-                                 AutomationProperties.Name="Nome do perfil"/>
-                        <Button Content="Salvar perfil" Margin="8,0,0,0" Command="{Binding SaveProfileCommand}"/>
-                        <Button Content="Perfis..." Margin="0" Command="{Binding ManageProfilesCommand}"/>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Perfil ativo:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox Width="200" ItemsSource="{Binding AvailableProfiles}" SelectedItem="{Binding SelectedProfileItem}"
+                                  DisplayMemberPath="Name" ToolTip="Selecione um perfil salvo para carregar suas configurações"/>
+                        <Button Style="{StaticResource NavButton}" Content="Limpar" Command="{Binding ClearProfileCommand}"
+                                Margin="6,0,0,0" Padding="8,4" ToolTip="Limpar dados do perfil e campos de origem/destino"/>
                     </StackPanel>
-                </Border>
-                <Border Style="{StaticResource PanelBorder}">
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Método de sincronização:" VerticalAlignment="Center" Margin="0,0,8,0" Style="{StaticResource MutedText}"/>
+                        <ComboBox Width="260" ItemsSource="{Binding Methods}" SelectedItem="{Binding SelectedMethod}"
+                                  DisplayMemberPath="Label" ToolTip="{Binding MethodDescription}"/>
+                        <Button Style="{StaticResource NavButton}" Content="Configurações" Command="{Binding OpenSettingsCommand}"
+                                ctl:Icon.Data="{StaticResource IconSettings}" Margin="10,0,0,0" Padding="12,6"
+                                ToolTip="Abrir janela completa de configurações do perfil e opções avançadas"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Linha 2: Origem (Source) | Troca | Destino (Target) | Botoes de Ação -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Origem -->
+                    <DockPanel Grid.Column="0" Margin="0,0,8,0" AllowDrop="True" PreviewDragOver="OnPathDragOver" Drop="OnSourceDrop">
+                        <TextBlock DockPanel.Dock="Top" Text="Origem (Source):" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding SourcePath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Height="32"
+                                     AllowDrop="True" PreviewDragOver="OnPathDragOver" Drop="OnSourceDrop"/>
+                            <Button Grid.Column="1" Command="{Binding BrowseSourceCommand}" ctl:Icon.Data="{StaticResource IconFolder}"
+                                    Padding="10,6" Margin="4,0,0,0" ToolTip="Procurar pasta de origem"/>
+                        </Grid>
+                    </DockPanel>
+
+                    <!-- Botão de Inversão -->
+                    <Button Grid.Column="1" Command="{Binding SwapSidesCommand}" ctl:Icon.Data="{StaticResource IconSwap}"
+                            Padding="8,6" Margin="4,16,4,0" VerticalAlignment="Center" ToolTip="Trocar Origem e Destino"/>
+
+                    <!-- Destino -->
+                    <DockPanel Grid.Column="2" Margin="8,0,12,0" AllowDrop="True" PreviewDragOver="OnPathDragOver" Drop="OnTargetDrop">
+                        <TextBlock DockPanel.Dock="Top" Text="Destino (Target):" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding TargetPath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Height="32"
+                                     AllowDrop="True" PreviewDragOver="OnPathDragOver" Drop="OnTargetDrop"/>
+                            <Button Grid.Column="1" Command="{Binding BrowseTargetCommand}" ctl:Icon.Data="{StaticResource IconFolder}"
+                                    Padding="10,6" Margin="4,0,0,0" ToolTip="Procurar pasta de destino"/>
+                        </Grid>
+                    </DockPanel>
+
+                    <!-- Botões Principais de Ação -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,0,1">
+                        <Button Content="Comparar" Style="{StaticResource PrimaryButton}" Command="{Binding CompareCommand}"
+                                ctl:Icon.Data="{StaticResource IconSearch}" Padding="18,7" MinWidth="110"/>
+                        <Button Content="Visualizar plano" Command="{Binding PreviewCommand}"
+                                ctl:Icon.Data="{StaticResource IconDocument}" Padding="14,7" Margin="0,0,8,0"/>
+                        <Button Content="Executar" Style="{StaticResource SuccessButton}" Command="{Binding ExecuteCommand}"
+                                ctl:Icon.Data="{StaticResource IconPlay}" Padding="18,7" MinWidth="110"/>
+                        <Button Content="Cancelar" Command="{Binding CancelCommand}"
+                                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" Padding="12,7"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- 1. BARRA COMPACTA DE INDICADORES (CONFORME MOCKUP 1) -->
+        <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
+            <UniformGrid Rows="1">
+                <!-- Analisados -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconDocument}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeTotalAnalyzed}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Analisados" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Iguais -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconCheck}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource SuccessBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeIdenticalCount}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource SuccessBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Iguais" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Diferentes -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconCompare}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource WarningBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeDifferentCount}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource WarningBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Diferentes" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Só na origem -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconArrowRight}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeSourceOnlyCount}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Só na origem" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Só no destino -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconArrowLeft}" Width="16" Height="16" Stretch="Uniform" Fill="#8B5CF6" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeTargetOnlyCount}" FontWeight="Bold" FontSize="14" Foreground="#8B5CF6" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Só no destino" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Conflitos -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconWarning}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource DangerBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeConflictCount}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Conflitos" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Erros -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconError}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource DangerBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeErrorCount}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Erros" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Marcados para executar -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Path Data="{StaticResource IconCheck}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TreeCheckedCount}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" Marcados" Style="{StaticResource SmallMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </UniformGrid>
+        </Border>
+
+        <!-- 2. FILTROS PILLS E PESQUISA (CONFORME MOCKUP 1) -->
+        <Grid Grid.Row="2" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Mostrar:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterAllText}" Tag="{Binding FilterAllTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="All"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterDiffText}" Tag="{Binding FilterDiffTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="Different"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterIdenticalText}" Tag="{Binding FilterIdenticalTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="Identical"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterSourceOnlyText}" Tag="{Binding FilterSourceOnlyTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="SourceOnly"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterTargetOnlyText}" Tag="{Binding FilterTargetOnlyTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="TargetOnly"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterConflictText}" Tag="{Binding FilterConflictTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="Conflict"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterErrorText}" Tag="{Binding FilterErrorTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="Error"/>
+                <Button Style="{StaticResource FilterPillButton}" Content="{Binding FilterCheckedText}" Tag="{Binding FilterCheckedTag}"
+                        Command="{Binding SetTreeFilterCommand}" CommandParameter="Checked"/>
+            </StackPanel>
+
+            <!-- Campo de Busca -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBox Width="260" Text="{Binding TreeSearchText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Pesquisar arquivos ou pastas por nome ou caminho..." AutomationProperties.Name="Pesquisar arquivos ou pastas"
+                         Height="30" VerticalContentAlignment="Center"/>
+                <Button Content="Expandir tudo" Padding="8,4" Margin="6,0,0,0" Command="{Binding ExpandAllTreeCommand}" ToolTip="Expandir todas as pastas"/>
+                <Button Content="Recolher tudo" Padding="8,4" Margin="4,0,0,0" Command="{Binding CollapseAllTreeCommand}" ToolTip="Recolher todas as pastas"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 3. COMPARAÇÃO EM DOIS PAINÉIS SINCRONIZADOS (CONFORME MOCKUPS 1 E 4) -->
+        <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1" CornerRadius="6">
+            <DockPanel>
+                <!-- Cabeçalho descritivo com os dois diretórios -->
+                <Grid DockPanel.Dock="Top" Background="{DynamicResource SurfaceAltBrush}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Padding="12,8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,1">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource IconFolder}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,6,0"/>
+                            <TextBlock Text="Origem: " FontWeight="Bold"/>
+                            <TextBlock Text="{Binding SourcePath}" TextTrimming="CharacterEllipsis" ToolTip="{Binding SourcePath}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Padding="6,8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,1">
+                        <TextBlock Text="Status" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <Border Grid.Column="2" Padding="12,8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource IconFolder}" Width="16" Height="16" Stretch="Uniform" Fill="{DynamicResource SuccessBrush}" Margin="0,0,6,0"/>
+                            <TextBlock Text="Destino: " FontWeight="Bold"/>
+                            <TextBlock Text="{Binding TargetPath}" TextTrimming="CharacterEllipsis" ToolTip="{Binding TargetPath}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Rodapé de indicação de rolagem sincronizada -->
+                <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="10,4">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="16"/>
-                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <WrapPanel>
-                                <CheckBox Content="Incluir subpastas" IsChecked="{Binding IncludeSubfolders}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Preservar datas" IsChecked="{Binding PreserveTimestamps}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Preservar atributos" IsChecked="{Binding PreserveAttributes}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Confirmar exclusões" IsChecked="{Binding ConfirmDeletes}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Verificar conteúdo por hash (SHA-256)" IsChecked="{Binding VerifyByHash}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Conferir hash da cópia" IsChecked="{Binding VerifyCopyByHash}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Copiar arquivos ocultos" IsChecked="{Binding IncludeHidden}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Copiar arquivos de sistema" IsChecked="{Binding IncludeSystem}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Continuar em caso de erro" IsChecked="{Binding ContinueOnError}" Margin="0,0,18,6"/>
-                                <CheckBox Content="Guardar versão anterior antes de sobrescrever" IsChecked="{Binding BackupBeforeOverwrite}" Margin="0,0,18,6"/>
-                            </WrapPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                <TextBlock Text="Ignorar diferença de data menor que" VerticalAlignment="Center"/>
-                                <TextBox Width="48" Margin="8,0" Text="{Binding ToleranceSeconds, UpdateSourceTrigger=LostFocus}" TextAlignment="Center"/>
-                                <TextBlock Text="segundos" VerticalAlignment="Center"/>
-                                <TextBlock Text="Operações em paralelo (0 = automático):" VerticalAlignment="Center" Margin="28,0,0,0"/>
-                                <TextBox Width="48" Margin="8,0" Text="{Binding MaxParallel, UpdateSourceTrigger=LostFocus}" TextAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                <TextBlock Text="Exclusões:" VerticalAlignment="Center" Width="70"/>
-                                <ComboBox Width="330" ItemsSource="{Binding DeleteOptions}" SelectedItem="{Binding SelectedDeleteOption}"
-                                          DisplayMemberPath="Label"/>
-                            </StackPanel>
-                            <Grid Margin="0,8,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="70"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Segurança:" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1" Text="{Binding SafetyFolder, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="Vazio = &lt;Target&gt;\.SyncBackup\aaaa-mm-dd_hhmmss"/>
-                                <Button Grid.Column="2" Content="..." Margin="8,0,0,0" Padding="10,5" Command="{Binding BrowseSafetyCommand}"/>
-                            </Grid>
-                            <TextBlock Foreground="{StaticResource TextMuted}" FontSize="11" Margin="70,2,0,0"
-                                       Text="Vazio = pasta .SyncBackup dentro do Target (ignorada nas comparações)."/>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Path Data="{StaticResource IconSync}" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,6,0"/>
+                            <TextBlock Text="Rolagem sincronizada" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Style="{StaticResource PanelTitle}" Text="EXCLUIR (um padrão por linha; * ? ** ; pasta\)"/>
-                            <TextBox Text="{Binding ExcludeText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True"
-                                     Height="90" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
-                            <TextBlock Style="{StaticResource PanelTitle}" Margin="0,8,0,6"
-                                       Text="INCLUIR SOMENTE (opcional; vazio = tudo)"/>
-                            <TextBox Text="{Binding IncludeText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True"
-                                     Height="50" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Path Data="{StaticResource IconSync}" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,6,0"/>
+                            <TextBlock Text="Rolagem sincronizada" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
-                </StackPanel>
-            </Expander>
 
-        <!-- 4. RESUMO: uma linha de cartões + faixa de ações previstas (compacto, para sobrar altura à lista) -->
-        <StackPanel Grid.Row="4" Margin="0,10,0,0" Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}}">
-            <ItemsControl ItemsSource="{Binding ComparisonSummary}" AutomationProperties.Name="Resumo da comparação">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ctl:SummaryCard Value="{Binding Value}" Label="{Binding Label}" Accent="{Binding Brush}" IconKey="{Binding IconKey}"
-                                         Command="{Binding DataContext.SelectRowsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Grid Margin="0,2,0,0">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Ações previstas:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <ItemsControl ItemsSource="{Binding PlanSummary}" AutomationProperties.Name="Ações previstas">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,18,0" Cursor="Hand" Background="Transparent"
-                                        MouseLeftButtonUp="OnPlanItemClick" ToolTip="Clique para selecionar esses itens na lista">
-                                <Path ctl:Icon.Key="{Binding IconKey}" Stretch="Uniform" Fill="{Binding Brush}" Width="15" Height="15" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding Value}" FontWeight="Bold" Foreground="{Binding Brush}" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding Label}" Style="{StaticResource MutedText}"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock Text="{Binding PlanSummaryText}" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" IsEnabled="{Binding IsIdle}">
-                <TextBlock x:Name="IncludedLabel" Text="{Binding IncludedText}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <Button x:Name="MarkAllButton" Content="Marcar todos" Padding="8,2" Margin="0,0,4,0" FontSize="11" Command="{Binding MarkAllCommand}"
-                        ToolTip="Inclui na execução todos os itens com ação pendente"/>
-                <Button x:Name="UnmarkAllButton" Content="Desmarcar todos" Padding="8,2" Margin="0,0,4,0" FontSize="11" Command="{Binding UnmarkAllCommand}"
-                        ToolTip="Deixa todos os itens de fora da execução (continuam na lista)"/>
-                <Button x:Name="OnlySelectedButton" Content="Só selecionados" Padding="8,2" Margin="0" FontSize="11" Click="OnIncludeOnlySelected"
-                        ToolTip="Executa somente os itens que estão selecionados na lista (desmarca o resto)"/>
-            </StackPanel>
-            </Grid>
-        </StackPanel>
+                <!-- Grade compartilhada de duas árvores alinhadas perfeitamente -->
+                <Grid>
+                    <DataGrid x:Name="ItemsGrid" ItemsSource="{Binding TreeManager.FlatVisibleRows}" AutoGenerateColumns="False"
+                              IsReadOnly="True" PreviewKeyDown="OnGridKeyDown" SelectionMode="Extended" SelectionUnit="FullRow"
+                              RowHeight="28" EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                              BorderThickness="0" Background="Transparent" HeadersVisibility="Column">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Marcar selecionados para executar" Click="OnMarkSelectedTree"/>
+                                <MenuItem Header="Desmarcar selecionados" Click="OnUnmarkSelectedTree"/>
+                                <MenuItem Header="Marcar somente selecionados" Click="OnIncludeOnlySelectedTree"/>
+                                <Separator/>
+                                <MenuItem Header="Ocultar item(ns) selecionado(s)" Click="OnHideSelectedTree"/>
+                                <MenuItem Header="Restaurar todos os itens ocultos" Click="OnRestoreHiddenTree"/>
+                                <Separator/>
+                                <MenuItem Header="Expandir todas as pastas" Command="{Binding ExpandAllTreeCommand}"/>
+                                <MenuItem Header="Recolher todas as pastas" Command="{Binding CollapseAllTreeCommand}"/>
+                                <Separator/>
+                                <MenuItem Header="Copiar selecionados: Origem → Destino" Click="OnCopyRightTree"/>
+                                <MenuItem Header="Copiar selecionados: Destino → Origem" Click="OnCopyLeftTree"/>
+                                <Separator/>
+                                <MenuItem Header="Remover da lista / excluir..." Click="OnDeleteSelectedTree"/>
+                                <Separator/>
+                                <MenuItem Header="Conflito: Manter Origem" Click="OnKeepSourceTree"/>
+                                <MenuItem Header="Conflito: Manter Destino" Click="OnKeepTargetTree"/>
+                                <MenuItem Header="Conflito: Manter ambos" Click="OnKeepBothTree"/>
+                                <MenuItem Header="Conflito: Ignorar" Click="OnIgnoreConflictTree"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
 
-        <!-- 6. ABAS (filtros rápidos da mesma lista) + PESQUISA -->
-        <Grid Grid.Row="5" Margin="0,4,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="TabAll" Style="{StaticResource TabButton}" Content="Comparação" Tag="{Binding AllTabTag}" Command="{Binding ShowAllCommand}"/>
-                <Button x:Name="TabPlan" Style="{StaticResource TabButton}" Content="Plano de execução" Command="{Binding PreviewCommand}"
-                        ToolTip="Abre o plano detalhado: exatamente o que será copiado, atualizado e excluído"/>
-                <Button x:Name="TabConflicts" Style="{StaticResource TabButton}" Content="{Binding ConflictsTabText}" Tag="{Binding ConflictsTabTag}" Command="{Binding ShowConflictsCommand}"/>
-                <Button x:Name="TabErrors" Style="{StaticResource TabButton}" Content="{Binding ErrorsTabText}" Tag="{Binding ErrorsTabTag}" Command="{Binding ShowErrorsCommand}"/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <TextBlock Text="Filtrar:" VerticalAlignment="Center" Margin="0,0,6,0" Style="{StaticResource MutedText}"/>
-                <ComboBox Width="150" ItemsSource="{Binding StatusFilters}" SelectedItem="{Binding SelectedStatusFilter}" DisplayMemberPath="Label"
-                          AutomationProperties.Name="Filtro por status"/>
-                <TextBox Width="220" Margin="8,0,0,0" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="Pesquisar arquivo..."
-                         AutomationProperties.Name="Pesquisar arquivo"/>
-                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource MutedText}"
-                           Text="{Binding VisibleCount, StringFormat='{}{0:N0} exibidos'}"/>
-                <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource MutedText}" Text="{Binding ItemsCountText, StringFormat=' · {0}'}"/>
-            </StackPanel>
-            <Border Grid.ColumnSpan="2" VerticalAlignment="Bottom" Height="1" Background="{DynamicResource BorderBrush}" Panel.ZIndex="-1"/>
-        </Grid>
+                        <DataGrid.Columns>
+                            <!-- ORIGEM: Checkbox -->
+                            <DataGridTemplateColumn Width="38" CanUserResize="False">
+                                <DataGridTemplateColumn.HeaderTemplate>
+                                    <DataTemplate><CheckBox ToolTip="Marcar/Desmarcar todos" Click="OnHeaderCheckAll"/></DataTemplate>
+                                </DataGridTemplateColumn.HeaderTemplate>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  Visibility="{Binding CanInclude, Converter={StaticResource BoolToVis}}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
 
-        <!-- 7. CONFLITOS: resolver os selecionados (só edita o plano) -->
-        <Border Grid.Row="6" Margin="0,8,0,0" Padding="10,6" CornerRadius="6" Background="{DynamicResource WarningSoftBrush}"
-                Visibility="{Binding HasConflicts, Converter={StaticResource BoolToVis}}">
-            <StackPanel Orientation="Horizontal">
-                <Path Data="{StaticResource IconWarning}" Width="18" Height="18" Stretch="Uniform" Fill="{DynamicResource WarningBrush}" Margin="0,0,8,0"/>
-                <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,12,0" Text="{Binding ConflictCount, StringFormat='{}{0:N0} conflito(s) — resolver os selecionados:'}"/>
-                <Button Content="Manter Source" Padding="10,4" Margin="0,0,6,0" Click="OnKeepSource"
-                        ToolTip="O Target passa a ficar igual ao Source para os conflitos selecionados (a versão do Target vai para a pasta de segurança)."/>
-                <Button Content="Manter Target" Padding="10,4" Margin="0,0,6,0" Click="OnKeepTarget"
-                        ToolTip="O Source passa a ficar igual ao Target para os conflitos selecionados (a versão do Source vai para a pasta de segurança)."/>
-                <Button Content="Manter ambos" Padding="10,4" Margin="0,0,6,0" Click="OnKeepBoth"
-                        ToolTip="Guarda as duas versões: a do Source com o nome original e a do Target como arquivo.conflict-AAAAMMDD-HHMMSS.ext, nos dois lados."/>
-                <Button Content="Ignorar" Padding="10,4" Margin="0" Click="OnIgnoreConflict"
-                        ToolTip="Não faz nada com os conflitos selecionados nesta execução."/>
-            </StackPanel>
+                            <!-- ORIGEM: Nome do Arquivo/Pasta com Árvore Hierárquica -->
+                            <DataGridTemplateColumn Header="Nome (Origem)" Width="2*" MinWidth="180">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="{Binding IndentMargin}" VerticalAlignment="Center">
+                                            <!-- Botão de Expandir/Recolher -->
+                                            <Button Style="{StaticResource ChevronToggleBtn}" Content="{Binding ExpandIconGlyph}"
+                                                    Command="{Binding ToggleExpandCommand}"
+                                                    Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}"/>
+                                            <!-- Ícone de Pasta ou Arquivo -->
+                                            <Path Data="{StaticResource IconFolder}" Width="15" Height="15" Stretch="Uniform" Fill="#F59E0B" Margin="0,0,6,0"
+                                                  Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}"/>
+                                            <Path Data="{StaticResource IconDocument}" Width="15" Height="15" Stretch="Uniform" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0"
+                                                  Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                                            <!-- Nome da Origem -->
+                                            <TextBlock Text="{Binding SourceNameDisplay}" VerticalAlignment="Center"
+                                                       FontWeight="{Binding FontWeight}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- ORIGEM: Tamanho -->
+                            <DataGridTextColumn Header="Tamanho" Binding="{Binding SourceSizeText}" Width="85" ElementStyle="{StaticResource RightAligned}"/>
+
+                            <!-- ORIGEM: Modificado -->
+                            <DataGridTextColumn Header="Modificado" Binding="{Binding SourceModifiedText}" Width="140"/>
+
+                            <!-- COLUNA CENTRAL: STATUS / OPERAÇÃO -->
+                            <DataGridTemplateColumn Header="Status" Width="80">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border HorizontalAlignment="Center" VerticalAlignment="Center" Padding="8,2" CornerRadius="4">
+                                            <TextBlock Text="{Binding StatusSymbol}" FontWeight="Bold" FontSize="14"
+                                                       Foreground="{Binding StatusBrush}" HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- DESTINO: Checkbox -->
+                            <DataGridTemplateColumn Width="38" CanUserResize="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  Visibility="{Binding CanInclude, Converter={StaticResource BoolToVis}}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- DESTINO: Nome do Arquivo/Pasta com Árvore Hierárquica -->
+                            <DataGridTemplateColumn Header="Nome (Destino)" Width="2*" MinWidth="180">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="{Binding IndentMargin}" VerticalAlignment="Center">
+                                            <!-- Botão de Expandir/Recolher -->
+                                            <Button Style="{StaticResource ChevronToggleBtn}" Content="{Binding ExpandIconGlyph}"
+                                                    Command="{Binding ToggleExpandCommand}"
+                                                    Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}"/>
+                                            <!-- Ícone de Pasta ou Arquivo -->
+                                            <Path Data="{StaticResource IconFolder}" Width="15" Height="15" Stretch="Uniform" Fill="#F59E0B" Margin="0,0,6,0"
+                                                  Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}"/>
+                                            <Path Data="{StaticResource IconDocument}" Width="15" Height="15" Stretch="Uniform" Fill="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0"
+                                                  Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                                            <!-- Nome do Destino -->
+                                            <TextBlock Text="{Binding TargetNameDisplay}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- DESTINO: Tamanho -->
+                            <DataGridTextColumn Header="Tamanho" Binding="{Binding TargetSizeText}" Width="85" ElementStyle="{StaticResource RightAligned}"/>
+
+                            <!-- DESTINO: Modificado -->
+                            <DataGridTextColumn Header="Modificado" Binding="{Binding TargetModifiedText}" Width="140"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Estado Vazio (Antes da primeira comparação) -->
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False"
+                                Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}">
+                        <Path Data="{StaticResource IconCompare}" Width="48" Height="48" Stretch="Uniform" Fill="{DynamicResource DisabledBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Nenhuma comparação realizada" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,2" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Escolha as pastas de Origem e Destino acima e clique em Comparar." Style="{StaticResource MutedText}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </DockPanel>
         </Border>
 
-        <!-- 8. LISTA (virtualizada) -->
-        <Grid Grid.Row="7" Margin="0,8,0,0">
-            <DataGrid x:Name="ItemsGrid" ItemsSource="{Binding RowsView}" AutoGenerateColumns="False" IsReadOnly="True"
-                      PreviewKeyDown="OnGridKeyDown" RowStyle="{StaticResource ComparisonRow}"
-                      CanUserAddRows="False" SelectionMode="Extended" SelectionUnit="FullRow" RowHeight="28"
-                      EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
-                      VirtualizingPanel.VirtualizationMode="Recycling" AutomationProperties.Name="Resultado da comparação">
-                <DataGrid.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="Marcar selecionados para executar" Click="OnMarkSelected"/>
-                        <MenuItem Header="Desmarcar selecionados (ficam de fora)" Click="OnUnmarkSelected"/>
-                        <MenuItem Header="Marcar somente os selecionados" Click="OnIncludeOnlySelected"/>
-                        <Separator/>
-                        <MenuItem Header="Copiar selecionados do Source para o Target    →" Click="OnCopyRight"/>
-                        <MenuItem Header="Copiar selecionados do Target para o Source    ←" Click="OnCopyLeft"/>
-                        <Separator/>
-                        <MenuItem Header="Remover da lista / excluir...    Del" Click="OnDeleteSelected"/>
-                        <Separator/>
-                        <MenuItem Header="Conflito: manter Source" Click="OnKeepSource"/>
-                        <MenuItem Header="Conflito: manter Target" Click="OnKeepTarget"/>
-                        <MenuItem Header="Conflito: manter ambos" Click="OnKeepBoth"/>
-                        <MenuItem Header="Conflito: ignorar" Click="OnIgnoreConflict"/>
-                    </ContextMenu>
-                </DataGrid.ContextMenu>
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Exec." Width="52" CanUserSort="False" CanUserResize="False">
-                        <DataGridTemplateColumn.HeaderStyle>
-                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
-                                <Setter Property="ToolTip" Value="Marcado = entra na execução. Desmarque para deixar o item de fora (ele continua na lista)."/>
-                            </Style>
-                        </DataGridTemplateColumn.HeaderStyle>
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="0"
-                                          Visibility="{Binding CanInclude, Converter={StaticResource BoolToVis}}" AutomationProperties.Name="Executar este item"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Status" Width="170" SortMemberPath="StatusText">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Path Style="{StaticResource StatusIconPath}" Fill="{Binding StatusBrush}"/>
-                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Ação" Width="190" SortMemberPath="ActionText">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ActionText}" Foreground="{Binding ActionBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Caminho relativo" Binding="{Binding DisplayPath}" Width="*" MinWidth="160" SortMemberPath="DisplayPath"/>
-                    <DataGridTextColumn Header="Tam. Source" Binding="{Binding SourceSizeText}" Width="92" SortMemberPath="SourceSizeSort" ElementStyle="{StaticResource RightAligned}"/>
-                    <DataGridTextColumn Header="Tam. Target" Binding="{Binding TargetSizeText}" Width="92" SortMemberPath="TargetSizeSort" ElementStyle="{StaticResource RightAligned}"/>
-                    <DataGridTextColumn Header="Modificado (Source)" Binding="{Binding SourceModifiedText}" Width="150" SortMemberPath="SourceModifiedSort"/>
-                    <DataGridTextColumn Header="Modificado (Target)" Binding="{Binding TargetModifiedText}" Width="150" SortMemberPath="TargetModifiedSort"/>
-                </DataGrid.Columns>
-            </DataGrid>
-
-            <!-- Estado vazio: antes da primeira comparação -->
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False"
-                        Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}">
-                <Path Data="{StaticResource IconCompare}" Width="44" Height="44" Stretch="Uniform" Fill="{DynamicResource DisabledBrush}" HorizontalAlignment="Center"/>
-                <TextBlock Text="Nenhuma comparação ainda" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,2" HorizontalAlignment="Center"/>
-                <TextBlock Text="Escolha (ou arraste) as pastas Source e Target e clique em Comparar." Style="{StaticResource MutedText}" HorizontalAlignment="Center"/>
-            </StackPanel>
-        </Grid>
-
-        <!-- 9. PROGRESSO -->
-        <Border Grid.Row="8" Style="{StaticResource PanelBorder}" Margin="0,8,0,0" Padding="12,8">
+        <!-- 4. PROGRESSO E DETALHES DA EXECUÇÃO (RODAPÉ) -->
+        <Border Grid.Row="4" Style="{StaticResource PanelBorder}" Margin="0,8,0,0" Padding="12,6">
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                               ToolTip="{Binding StatusMessage}"/>
-                    <TextBlock Grid.Column="1" Style="{StaticResource SmallMutedText}" Margin="16,0,0,0" VerticalAlignment="Center"
-                               Text="Na lista:  →  copia Source → Target   ←  Target → Source   Del  remove/exclui   (clique direito: mais)"/>
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="1" Style="{StaticResource SmallMutedText}"
+                               Text="Atalhos:  →  copia Origem → Destino   ←  Destino → Origem   Del  exclui   Espaço  marca/desmarca"/>
                 </Grid>
-                <ProgressBar Height="8" Margin="0,6,0,4" Minimum="0" Maximum="100" Value="{Binding ProgressValue, Mode=OneWay}"
+
+                <ProgressBar Height="6" Margin="0,6,0,4" Minimum="0" Maximum="100" Value="{Binding ProgressValue, Mode=OneWay}"
                              IsIndeterminate="{Binding IsIndeterminate}"/>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding ProgressText}" Style="{StaticResource SmallMutedText}" Margin="0,0,14,0"/>
-                    <TextBlock Text="{Binding CurrentFile}" Style="{StaticResource SmallMutedText}" TextTrimming="CharacterEllipsis" MaxWidth="600"/>
-                </StackPanel>
+
+                <DockPanel>
+                    <Expander Header="Detalhes da execução (log e avisos)" IsExpanded="{Binding BottomExpanded, Mode=TwoWay}" FontSize="12">
+                        <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,4,0,0" Padding="8">
+                            <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <ItemsControl ItemsSource="{Binding Notices}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding StringFormat='⚠ {0}'}" Foreground="{DynamicResource WarningTextBrush}" TextWrapping="Wrap" Margin="0,0,0,2"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding ExecutionSummary}" FontFamily="{StaticResource MonoFont}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Expander>
+                </DockPanel>
             </StackPanel>
         </Border>
-
-        <!-- 10. LOG E RESULTADO (recolhido por padrão, para dar espaço à lista) -->
-        <Expander Grid.Row="9" x:Name="LogExpander" Header="Avisos, resultado da execução e log" Margin="0,8,0,0"
-                  IsExpanded="{Binding BottomExpanded, Mode=TwoWay}">
-            <TabControl Height="170" Margin="0,6,0,0">
-                <TabItem Header="Avisos e resultado">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{DynamicResource SurfaceBrush}">
-                        <StackPanel Margin="10">
-                            <ItemsControl ItemsSource="{Binding Notices}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding StringFormat='⚠ {0}'}" Foreground="{DynamicResource WarningTextBrush}" TextWrapping="Wrap" Margin="0,0,0,3"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="{Binding ExecutionSummary}" FontFamily="{StaticResource MonoFont}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-                <TabItem Header="Log">
-                    <ListBox x:Name="LogList" ItemsSource="{Binding LogLines}" FontFamily="{StaticResource MonoFont}" FontSize="12"
-                             BorderThickness="0" VirtualizingPanel.IsVirtualizing="True"/>
-                </TabItem>
-            </TabControl>
-        </Expander>
     </Grid>
 </UserControl>

@@ -149,6 +149,48 @@ public sealed class MainViewModel : ObservableObject
             "Toda alteração em arquivos passa pelo plano de sincronização; a interface nunca copia ou exclui diretamente.\n\n" +
             "Logs: " + _log.LogDirectory));
 
+        // Inicialização da árvore hierárquica e sincronização
+        TreeManager.CheckChanged += () =>
+        {
+            SyncTreeChecksToRows();
+            RaiseTreeChanged();
+            IncludeChanged();
+        };
+        TreeManager.StructureOrFilterChanged += RaiseTreeChanged;
+
+        SetTreeFilterCommand = new RelayCommand<string>(filterName =>
+        {
+            if (Enum.TryParse<ComparisonTreeFilter>(filterName, true, out var f))
+            {
+                TreeManager.ActiveFilter = f;
+                RaiseTreeChanged();
+            }
+        });
+        ExpandAllTreeCommand = new RelayCommand(TreeManager.ExpandAll);
+        CollapseAllTreeCommand = new RelayCommand(TreeManager.CollapseAll);
+        HideNodeCommand = new RelayCommand<ComparisonTreeNode>(node =>
+        {
+            if (node is not null) TreeManager.HideNode(node);
+        });
+        RestoreHiddenCommand = new RelayCommand(TreeManager.RestoreHidden);
+        MarkAllTreeCommand = new RelayCommand(() =>
+        {
+            TreeManager.SetAllChecked(true);
+            SetAllIncluded(true);
+        });
+        UnmarkAllTreeCommand = new RelayCommand(() =>
+        {
+            TreeManager.SetAllChecked(false);
+            SetAllIncluded(false);
+        });
+        OpenSettingsCommand = new RelayCommand(async () =>
+        {
+            var profile = BuildProfile();
+            if (_profileId > 0) profile.Id = _profileId;
+            await OpenEditorAsync(profile, EditorSection.General);
+        });
+        ClearProfileCommand = new RelayCommand(ClearProfileData);
+
         _log.EntryWritten += e => _pendingLog.Enqueue(FileLogService.Format(e));
         _logTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(250) };
         _logTimer.Tick += (_, _) => FlushLog();
@@ -156,6 +198,97 @@ public sealed class MainViewModel : ObservableObject
     }
 
     // ------------------------------------------------------------ dados de apoio
+    public HierarchicalComparisonManager TreeManager { get; } = new();
+    public ObservableCollection<SyncProfile> AvailableProfiles { get; } = new();
+    public RelayCommand<string> SetTreeFilterCommand { get; }
+    public RelayCommand ExpandAllTreeCommand { get; }
+    public RelayCommand CollapseAllTreeCommand { get; }
+    public RelayCommand<ComparisonTreeNode> HideNodeCommand { get; }
+    public RelayCommand RestoreHiddenCommand { get; }
+    public RelayCommand MarkAllTreeCommand { get; }
+    public RelayCommand UnmarkAllTreeCommand { get; }
+    public RelayCommand OpenSettingsCommand { get; }
+    public RelayCommand ClearProfileCommand { get; }
+
+    public int TreeTotalAnalyzed => TreeManager.TotalAnalyzed;
+    public int TreeIdenticalCount => TreeManager.IdenticalCount;
+    public int TreeDifferentCount => TreeManager.DifferentCount;
+    public int TreeSourceOnlyCount => TreeManager.SourceOnlyCount;
+    public int TreeTargetOnlyCount => TreeManager.TargetOnlyCount;
+    public int TreeConflictCount => TreeManager.ConflictCount;
+    public int TreeErrorCount => TreeManager.ErrorCount;
+    public int TreeCheckedCount => TreeManager.ExecutableCheckedCount;
+
+    public string FilterAllText => $"Todos ({TreeManager.TotalAnalyzed})";
+    public string FilterDiffText => $"Diferenças ({TreeManager.DifferentCount})";
+    public string FilterIdenticalText => $"Iguais ({TreeManager.IdenticalCount})";
+    public string FilterSourceOnlyText => $"Só origem ({TreeManager.SourceOnlyCount})";
+    public string FilterTargetOnlyText => $"Só destino ({TreeManager.TargetOnlyCount})";
+    public string FilterConflictText => $"Conflitos ({TreeManager.ConflictCount})";
+    public string FilterErrorText => $"Erros ({TreeManager.ErrorCount})";
+    public string FilterCheckedText => $"Marcados ({TreeManager.ExecutableCheckedCount})";
+
+    public string FilterAllTag => TreeManager.ActiveFilter == ComparisonTreeFilter.All ? "active" : "";
+    public string FilterDiffTag => TreeManager.ActiveFilter == ComparisonTreeFilter.Different ? "active" : "";
+    public string FilterIdenticalTag => TreeManager.ActiveFilter == ComparisonTreeFilter.Identical ? "active" : "";
+    public string FilterSourceOnlyTag => TreeManager.ActiveFilter == ComparisonTreeFilter.SourceOnly ? "active" : "";
+    public string FilterTargetOnlyTag => TreeManager.ActiveFilter == ComparisonTreeFilter.TargetOnly ? "active" : "";
+    public string FilterConflictTag => TreeManager.ActiveFilter == ComparisonTreeFilter.Conflict ? "active" : "";
+    public string FilterErrorTag => TreeManager.ActiveFilter == ComparisonTreeFilter.Error ? "active" : "";
+    public string FilterCheckedTag => TreeManager.ActiveFilter == ComparisonTreeFilter.Checked ? "active" : "";
+
+    public string TreeSearchText
+    {
+        get => TreeManager.SearchText;
+        set
+        {
+            TreeManager.SearchText = value;
+            OnPropertyChanged(nameof(TreeSearchText));
+        }
+    }
+
+    public void RaiseTreeChanged()
+    {
+        OnPropertyChanged(nameof(TreeTotalAnalyzed));
+        OnPropertyChanged(nameof(TreeIdenticalCount));
+        OnPropertyChanged(nameof(TreeDifferentCount));
+        OnPropertyChanged(nameof(TreeSourceOnlyCount));
+        OnPropertyChanged(nameof(TreeTargetOnlyCount));
+        OnPropertyChanged(nameof(TreeConflictCount));
+        OnPropertyChanged(nameof(TreeErrorCount));
+        OnPropertyChanged(nameof(TreeCheckedCount));
+
+        OnPropertyChanged(nameof(FilterAllText));
+        OnPropertyChanged(nameof(FilterDiffText));
+        OnPropertyChanged(nameof(FilterIdenticalText));
+        OnPropertyChanged(nameof(FilterSourceOnlyText));
+        OnPropertyChanged(nameof(FilterTargetOnlyText));
+        OnPropertyChanged(nameof(FilterConflictText));
+        OnPropertyChanged(nameof(FilterErrorText));
+        OnPropertyChanged(nameof(FilterCheckedText));
+
+        OnPropertyChanged(nameof(FilterAllTag));
+        OnPropertyChanged(nameof(FilterDiffTag));
+        OnPropertyChanged(nameof(FilterIdenticalTag));
+        OnPropertyChanged(nameof(FilterSourceOnlyTag));
+        OnPropertyChanged(nameof(FilterTargetOnlyTag));
+        OnPropertyChanged(nameof(FilterConflictTag));
+        OnPropertyChanged(nameof(FilterErrorTag));
+        OnPropertyChanged(nameof(FilterCheckedTag));
+    }
+
+    private void SyncTreeChecksToRows()
+    {
+        var included = TreeManager.GetIncludedRelativePaths();
+        foreach (var r in _rows)
+        {
+            if (r.CanInclude)
+            {
+                r.SetIncludedQuietly(included.Contains(r.Item.RelativePath));
+            }
+        }
+    }
+
     public IReadOnlyList<MethodOption> Methods { get; }
     public IReadOnlyList<DeleteOption> DeleteOptions { get; }
     public IReadOnlyList<StatusFilter> StatusFilters { get; }
@@ -394,14 +527,32 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task RefreshSettingsAsync() => _confirmBeforeExecute = (await _settings.LoadAsync()).ConfirmBeforeExecute;
 
-    /// <summary>Abre o editor de perfil (novo ou existente) numa seção.</summary>
+    /// <summary>Abre o editor de perfil em janela dedicada (ProfileWindow).</summary>
     public async Task OpenEditorAsync(SyncProfile profile, EditorSection section = EditorSection.General)
     {
-        if (!GoTo(AppScreen.ProfileEditor)) return;
         var editor = _services.GetRequiredService<ProfileEditorViewModel>();
-        editor.Closed += async saved => await OnEditorClosedAsync(saved);
-        Editor = editor;
         await editor.LoadAsync(profile, section);
+        var win = new Views.ProfileWindow(editor);
+        if (System.Windows.Application.Current?.MainWindow is { } main && main != win)
+        {
+            win.Owner = main;
+        }
+
+        var res = win.ShowDialog();
+        if (res == true || win.Applied)
+        {
+            var saved = win.ResultProfile;
+            if (saved is not null)
+            {
+                StatusMessage = $"Perfil \"{saved.Name}\" salvo.";
+                _log.Info("PROFILE SAVED", $"{saved.Name} (#{saved.Id})");
+                if (saved.Id == _profileId || _profileId == 0)
+                {
+                    LoadProfile(saved);
+                }
+            }
+            await LoadAvailableProfilesAsync();
+        }
     }
 
     private async Task OnEditorClosedAsync(SyncProfile? saved)
@@ -576,6 +727,36 @@ public sealed class MainViewModel : ObservableObject
         try { ExcludeText = s.DefaultExcludePatterns; }
         finally { _loading = false; }
         IsDirty = false;
+        await LoadAvailableProfilesAsync();
+    }
+
+    private SyncProfile? _selectedProfileItem;
+    public SyncProfile? SelectedProfileItem
+    {
+        get => _selectedProfileItem;
+        set
+        {
+            if (SetProperty(ref _selectedProfileItem, value) && value is not null)
+            {
+                if (value.Id != _profileId)
+                {
+                    LoadProfile(value);
+                }
+            }
+        }
+    }
+
+    public async Task LoadAvailableProfilesAsync()
+    {
+        try
+        {
+            var list = await _profiles.GetAllAsync();
+            AvailableProfiles.Clear();
+            foreach (var p in list) AvailableProfiles.Add(p);
+            _selectedProfileItem = AvailableProfiles.FirstOrDefault(p => p.Id == _profileId);
+            OnPropertyChanged(nameof(SelectedProfileItem));
+        }
+        catch { }
     }
 
     private bool ConfirmDiscardChanges() =>
@@ -620,6 +801,8 @@ public sealed class MainViewModel : ObservableObject
             _massDeleteThreshold = p.MassDeleteThreshold;
         }
         finally { _loading = false; }
+        _selectedProfileItem = AvailableProfiles.FirstOrDefault(x => x.Id == p.Id);
+        OnPropertyChanged(nameof(SelectedProfileItem));
         ClearResults();
         IsDirty = false;
         OnPropertyChanged(nameof(WindowTitle));
@@ -684,6 +867,8 @@ public sealed class MainViewModel : ObservableObject
             _removedFromList.Clear();
             FillRows(rows);
             ShowSummary();
+            TreeManager.Build(outcome.Plan, rows);
+            RaiseTreeChanged();
             RaiseOutcomeChanged();
             StatusMessage = outcome.Plan.IsBlocked
                 ? "Plano BLOQUEADO: " + outcome.Plan.BlockedReason
@@ -875,6 +1060,12 @@ public sealed class MainViewModel : ObservableObject
 
     private void OnRowIncludedChanged(ItemRow row)
     {
+        if (TreeManager.FindByPath(row.Item.RelativePath) is { } node)
+        {
+            node.SetCheckedQuietly(row.IsIncluded);
+            node.Parent?.UpdateCheckFromChildrenDirect();
+            RaiseTreeChanged();
+        }
         IncludeChanged();
     }
 
@@ -973,6 +1164,8 @@ public sealed class MainViewModel : ObservableObject
         _removedFromList.Clear();
         _rowByPath.Clear();
         _rows = new ObservableCollection<ItemRow>();
+        TreeManager.FlatVisibleRows.Clear();
+        RaiseTreeChanged();
         RowsView = null;
         VisibleCount = 0;
         ComparisonSummary.Clear();
@@ -989,6 +1182,24 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasConflicts));
         OnPropertyChanged(nameof(ConflictCount));
         CommandManager_Invalidate();
+    }
+
+    public void ClearProfileData()
+    {
+        if (IsDirty && !ConfirmDiscardChanges()) return;
+
+        _profileId = 0;
+        _profileName = "";
+        _selectedProfileItem = null;
+        SourcePath = "";
+        TargetPath = "";
+        SelectedMethod = Methods.FirstOrDefault(m => m.Method == SyncMethod.MirrorSourceToTarget) ?? Methods[0];
+        ClearResults();
+        IsDirty = false;
+        OnPropertyChanged(nameof(ProfileName));
+        OnPropertyChanged(nameof(SelectedProfileItem));
+        OnPropertyChanged(nameof(WindowTitle));
+        StatusMessage = "Dados de perfil limpos.";
     }
 
     // ------------------------------------------------------------ conflitos (edição do plano; nada é executado aqui)
@@ -1137,6 +1348,8 @@ public sealed class MainViewModel : ObservableObject
             _outcome = await _workflow.RefreshItemsAsync(outcome, affected, CancellationToken.None);
             UpdateRows(affected);
             ShowSummary();
+            TreeManager.Build(_outcome.Plan, _rows);
+            RaiseTreeChanged();
             RaiseOutcomeChanged();
         }
         catch (ProfileBusyException ex)
@@ -1157,6 +1370,72 @@ public sealed class MainViewModel : ObservableObject
             _cts?.Dispose();
             _cts = null;
         }
+    }
+
+    // Operações manuais na árvore hierárquica compartilhada
+    public async Task CopySelectionTreeAsync(IReadOnlyList<ComparisonTreeNode> nodes, FileSide from)
+    {
+        var items = nodes.Where(n => !n.IsDirectory && n.Item is not null).Select(n => n.Item!).ToList();
+        if (items.Count == 0) return;
+        var rows = items.Select(i => _rowByPath.GetValueOrDefault(i.RelativePath)).Where(r => r is not null).Cast<ItemRow>().ToList();
+        if (rows.Count > 0)
+        {
+            await CopySelectionAsync(rows, from);
+        }
+    }
+
+    public async Task DeleteSelectionTreeAsync(IReadOnlyList<ComparisonTreeNode> nodes)
+    {
+        var items = nodes.Where(n => !n.IsDirectory && n.Item is not null).Select(n => n.Item!).ToList();
+        if (items.Count == 0) return;
+        var rows = items.Select(i => _rowByPath.GetValueOrDefault(i.RelativePath)).Where(r => r is not null).Cast<ItemRow>().ToList();
+        if (rows.Count > 0)
+        {
+            await DeleteSelectionAsync(rows);
+        }
+    }
+
+    public void ResolveSelectionTree(IReadOnlyList<ComparisonTreeNode> nodes, ConflictResolution resolution)
+    {
+        var items = nodes.Where(n => !n.IsDirectory && n.Item is not null).Select(n => n.Item!).ToList();
+        if (items.Count == 0) return;
+        var rows = items.Select(i => _rowByPath.GetValueOrDefault(i.RelativePath)).Where(r => r is not null).Cast<ItemRow>().ToList();
+        if (rows.Count > 0)
+        {
+            ResolveSelection(rows, resolution);
+            if (_outcome is not null)
+            {
+                TreeManager.Build(_outcome.Plan, _rows);
+                RaiseTreeChanged();
+            }
+        }
+    }
+
+    public void SetIncludedTree(IReadOnlyList<ComparisonTreeNode> nodes, bool isChecked)
+    {
+        foreach (var node in nodes)
+        {
+            node.IsChecked = isChecked;
+        }
+    }
+
+    public void IncludeOnlyTree(IReadOnlyList<ComparisonTreeNode> nodes)
+    {
+        var set = new HashSet<string>(nodes.Where(n => !n.IsDirectory).Select(n => n.RelativePath), StringComparer.OrdinalIgnoreCase);
+        foreach (var node in TreeManager.AllNodes)
+        {
+            if (!node.IsDirectory && node.CanInclude)
+            {
+                node.SetCheckedQuietly(set.Contains(node.RelativePath));
+            }
+        }
+        foreach (var dir in TreeManager.AllNodes.Where(n => n.IsDirectory).OrderByDescending(n => n.Depth))
+        {
+            dir.UpdateCheckFromChildrenDirect();
+        }
+        SyncTreeChecksToRows();
+        RaiseTreeChanged();
+        IncludeChanged();
     }
 
     // ------------------------------------------------------------ executar

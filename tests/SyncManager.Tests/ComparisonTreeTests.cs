@@ -137,4 +137,80 @@ public class ComparisonTreeTests
         Assert.Equal(0, manager.HiddenCount);
         Assert.Contains(manager.FlatVisibleRows, n => n.RelativePath == "arquivo1.txt");
     }
+
+    [Fact]
+    public void Search_AutoExpandsParentsOfMatchingNodes()
+    {
+        var ops = new List<SyncOperation>
+        {
+            MakeDummyOp("pasta\\sub\\item_especial.txt", false, SyncOperationType.Copy, ComparisonStatus.SourceOnly),
+            MakeDummyOp("outro.txt", false, SyncOperationType.Skip, ComparisonStatus.Identical)
+        };
+
+        var plan = new SyncPlan(SyncMethod.MirrorSourceToTarget, "C:\\src", "C:\\dst", ops, 2, 0.3, null, Array.Empty<string>());
+        var manager = new HierarchicalComparisonManager();
+        manager.Build(plan);
+        manager.CollapseAll();
+
+        var pasta = manager.FindByPath("pasta")!;
+        var sub = manager.FindByPath("pasta\\sub")!;
+        Assert.False(pasta.IsExpanded);
+        Assert.False(sub.IsExpanded);
+
+        manager.SearchText = "especial";
+
+        Assert.True(pasta.IsExpanded);
+        Assert.True(sub.IsExpanded);
+        Assert.Contains(manager.FlatVisibleRows, n => n.RelativePath == "pasta\\sub\\item_especial.txt");
+    }
+
+    [Fact]
+    public void DisplayNames_ShowDashWhenFileMissingOnOneSide()
+    {
+        var sourceOnlyItem = new ComparisonItem(
+            "origem_so.txt", "C:\\src\\origem_so.txt", "C:\\dst\\origem_so.txt",
+            false, true, false, 500, null, DateTime.UtcNow, null, ComparisonStatus.SourceOnly);
+        var targetOnlyItem = new ComparisonItem(
+            "destino_so.txt", "C:\\src\\destino_so.txt", "C:\\dst\\destino_so.txt",
+            false, false, true, null, 700, null, DateTime.UtcNow, ComparisonStatus.TargetOnly);
+
+        var ops = new List<SyncOperation>
+        {
+            new SyncOperation(SyncOperationType.Copy, sourceOnlyItem, sourceOnlyItem.SourcePath, sourceOnlyItem.TargetPath, 500, "Copia", FileSide.Source, FileSide.Target),
+            new SyncOperation(SyncOperationType.Delete, targetOnlyItem, targetOnlyItem.SourcePath, targetOnlyItem.TargetPath, 700, "Exclui", FileSide.Target, FileSide.Target)
+        };
+
+        var plan = new SyncPlan(SyncMethod.MirrorSourceToTarget, "C:\\src", "C:\\dst", ops, 2, 0.3, null, Array.Empty<string>());
+        var manager = new HierarchicalComparisonManager();
+        manager.Build(plan);
+
+        var nodeSourceOnly = manager.FindByPath("origem_so.txt")!;
+        Assert.Equal("origem_so.txt", nodeSourceOnly.SourceNameDisplay);
+        Assert.Equal("—", nodeSourceOnly.TargetNameDisplay);
+
+        var nodeTargetOnly = manager.FindByPath("destino_so.txt")!;
+        Assert.Equal("—", nodeTargetOnly.SourceNameDisplay);
+        Assert.Equal("destino_so.txt", nodeTargetOnly.TargetNameDisplay);
+    }
+
+    [Fact]
+    public void Counters_ReflectComparisonStatusesAccurately()
+    {
+        var ops = new List<SyncOperation>
+        {
+            MakeDummyOp("arq1.txt", false, SyncOperationType.Copy, ComparisonStatus.SourceOnly),
+            MakeDummyOp("arq2.txt", false, SyncOperationType.Update, ComparisonStatus.SourceNewer),
+            MakeDummyOp("arq3.txt", false, SyncOperationType.Skip, ComparisonStatus.Identical)
+        };
+
+        var plan = new SyncPlan(SyncMethod.MirrorSourceToTarget, "C:\\src", "C:\\dst", ops, 3, 0.3, null, Array.Empty<string>());
+        var manager = new HierarchicalComparisonManager();
+        manager.Build(plan);
+
+        Assert.Equal(3, manager.TotalAnalyzed);
+        Assert.Equal(1, manager.IdenticalCount);
+        Assert.Equal(2, manager.DifferentCount);
+        Assert.Equal(1, manager.SourceOnlyCount);
+        Assert.Equal(2, manager.ExecutableCheckedCount);
+    }
 }

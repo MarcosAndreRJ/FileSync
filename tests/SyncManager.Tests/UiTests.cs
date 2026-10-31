@@ -11,6 +11,8 @@ using SyncManager.Wpf.Services;
 using SyncManager.Wpf.ViewModels;
 using SyncManager.Wpf.Views;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true, MaxParallelThreads = 1)]
+
 namespace SyncManager.Tests;
 
 /// <summary>Uma única thread STA com Dispatcher para todos os testes de UI (o WPF só admite um Application por processo).</summary>
@@ -34,6 +36,17 @@ internal static class UiThread
             var app = new App();
             app.InitializeComponent();   // carrega os recursos do App.xaml (estilos usados pelas janelas)
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler((s, _) =>
+            {
+                if (s is Window w)
+                {
+                    w.ShowActivated = false;
+                    w.ShowInTaskbar = false;
+                    w.WindowStartupLocation = WindowStartupLocation.Manual;
+                    w.Left = -32000;
+                    w.Top = -32000;
+                }
+            }));
             PresentationTraceSources.Refresh();
             PresentationTraceSources.DataBindingSource.Listeners.Add(new Listener());
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error | SourceLevels.Warning;
@@ -47,7 +60,26 @@ internal static class UiThread
         return dispatcher!;
     }
 
-    public static Task Run(Func<Task> body) => Lazy.Value.InvokeAsync(body).Task.Unwrap();
+    public static async Task Run(Func<Task> body)
+    {
+        try
+        {
+            await Lazy.Value.InvokeAsync(body).Task.Unwrap();
+        }
+        finally
+        {
+            await Lazy.Value.InvokeAsync(() =>
+            {
+                if (System.Windows.Application.Current is { } a)
+                {
+                    foreach (Window w in a.Windows.OfType<Window>().ToArray())
+                    {
+                        try { w.Close(); } catch { }
+                    }
+                }
+            });
+        }
+    }
 
     /// <summary>Deixa o WPF processar layout/binding pendentes.</summary>
     public static Task Settle() => Lazy.Value.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle).Task;

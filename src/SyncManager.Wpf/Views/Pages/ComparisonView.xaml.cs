@@ -1,4 +1,3 @@
-using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,138 +8,107 @@ using SyncManager.Wpf.ViewModels;
 namespace SyncManager.Wpf.Views.Pages;
 
 /// <summary>
-/// Página "Comparação". Só comportamento de View: arrastar e soltar, teclas na lista e rolagem do log.
-/// Toda regra continua no MainViewModel.
+/// Página de Comparação com visualização hierárquica em dois painéis sincronizados.
 /// </summary>
 public partial class ComparisonView : UserControl
 {
-    private MainViewModel? _subscribed;
-
     public ComparisonView()
     {
         InitializeComponent();
-        DataContextChanged += (_, _) => Hook();
-        Hook();
     }
 
     private MainViewModel Vm => (MainViewModel)DataContext;
 
-    private void Hook()
-    {
-        if (_subscribed is not null) { _subscribed.LogLines.CollectionChanged -= OnLogChanged; _subscribed.SelectRowsRequested -= OnSelectRows; }
-        _subscribed = DataContext as MainViewModel;
-        if (_subscribed is not null) { _subscribed.LogLines.CollectionChanged += OnLogChanged; _subscribed.SelectRowsRequested += OnSelectRows; }
-    }
+    private IReadOnlyList<ComparisonTreeNode> SelectedTreeNodes() =>
+        ItemsGrid.SelectedItems.OfType<ComparisonTreeNode>().ToList();
 
-    private bool _scrollPending;
-
-    // Uma rolagem por lote de linhas, e só com o log visível: rolar a cada linha (ou uma lista oculta) força layout reentrante.
-    private void OnLogChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private void OnHeaderCheckAll(object sender, RoutedEventArgs e)
     {
-        if (e.Action != NotifyCollectionChangedAction.Add || !LogList.IsVisible || _scrollPending) return;
-        _scrollPending = true;
-        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () =>
+        if (sender is CheckBox cb && cb.IsChecked.HasValue)
         {
-            _scrollPending = false;
-            if (LogList.IsVisible && LogList.Items.Count > 0) LogList.ScrollIntoView(LogList.Items[^1]);
-        });
+            Vm.TreeManager.SetAllChecked(cb.IsChecked.Value);
+        }
     }
 
-    // ------------------------------------------------------------------ teclado na lista: ← → Delete
+    private void OnMarkSelectedTree(object sender, RoutedEventArgs e) =>
+        Vm.SetIncludedTree(SelectedTreeNodes(), true);
 
-    private IReadOnlyList<ItemRow> Selected() => ItemsGrid.SelectedItems.OfType<ItemRow>().ToList();
+    private void OnUnmarkSelectedTree(object sender, RoutedEventArgs e) =>
+        Vm.SetIncludedTree(SelectedTreeNodes(), false);
 
-    /// <summary>
-    /// →  copia os itens selecionados do Source para o Target; ←  do Target para o Source; Delete remove da lista
-    /// (perguntando se também exclui fisicamente). Tudo passa pelo plano/executor: a interface nunca copia nem apaga diretamente.
-    /// </summary>
+    private void OnIncludeOnlySelectedTree(object sender, RoutedEventArgs e)
+    {
+        var sel = SelectedTreeNodes();
+        if (sel.Count == 0)
+        {
+            MessageBox.Show("Selecione na lista os itens que deseja executar.", "Marcar somente selecionados", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        Vm.IncludeOnlyTree(sel);
+    }
+
+    private void OnHideSelectedTree(object sender, RoutedEventArgs e)
+    {
+        var sel = SelectedTreeNodes();
+        if (sel.Count > 0)
+        {
+            Vm.TreeManager.HideNodes(sel);
+        }
+    }
+
+    private void OnRestoreHiddenTree(object sender, RoutedEventArgs e) =>
+        Vm.TreeManager.RestoreHidden();
+
+    private async void OnCopyRightTree(object sender, RoutedEventArgs e) =>
+        await Safe(() => Vm.CopySelectionTreeAsync(SelectedTreeNodes(), FileSide.Source));
+
+    private async void OnCopyLeftTree(object sender, RoutedEventArgs e) =>
+        await Safe(() => Vm.CopySelectionTreeAsync(SelectedTreeNodes(), FileSide.Target));
+
+    private async void OnDeleteSelectedTree(object sender, RoutedEventArgs e) =>
+        await Safe(() => Vm.DeleteSelectionTreeAsync(SelectedTreeNodes()));
+
+    private void OnKeepSourceTree(object sender, RoutedEventArgs e) =>
+        Vm.ResolveSelectionTree(SelectedTreeNodes(), ConflictResolution.KeepSource);
+
+    private void OnKeepTargetTree(object sender, RoutedEventArgs e) =>
+        Vm.ResolveSelectionTree(SelectedTreeNodes(), ConflictResolution.KeepTarget);
+
+    private void OnKeepBothTree(object sender, RoutedEventArgs e) =>
+        Vm.ResolveSelectionTree(SelectedTreeNodes(), ConflictResolution.KeepBoth);
+
+    private void OnIgnoreConflictTree(object sender, RoutedEventArgs e) =>
+        Vm.ResolveSelectionTree(SelectedTreeNodes(), ConflictResolution.Skip);
+
     private async void OnGridKeyDown(object sender, KeyEventArgs e)
     {
         if (Keyboard.Modifiers != ModifierKeys.None || !Vm.IsIdle) return;
+
+        var selTree = SelectedTreeNodes();
+        if (selTree.Count == 0) return;
 
         switch (e.Key)
         {
             case Key.Right:
                 e.Handled = true;
-                await Safe(() => Vm.CopySelectionAsync(Selected(), FileSide.Source));
+                await Safe(() => Vm.CopySelectionTreeAsync(selTree, FileSide.Source));
                 break;
             case Key.Left:
                 e.Handled = true;
-                await Safe(() => Vm.CopySelectionAsync(Selected(), FileSide.Target));
+                await Safe(() => Vm.CopySelectionTreeAsync(selTree, FileSide.Target));
                 break;
             case Key.Delete:
                 e.Handled = true;
-                await Safe(() => Vm.DeleteSelectionAsync(Selected()));
+                await Safe(() => Vm.DeleteSelectionTreeAsync(selTree));
                 break;
             case Key.Space:
                 e.Handled = true;
-                ToggleSelectedIncluded();
+                bool allChecked = selTree.All(n => n.IsChecked == true);
+                Vm.SetIncludedTree(selTree, !allChecked);
                 break;
         }
     }
 
-    private async void OnCopyRight(object sender, RoutedEventArgs e) => await Safe(() => Vm.CopySelectionAsync(Selected(), FileSide.Source));
-    private async void OnCopyLeft(object sender, RoutedEventArgs e) => await Safe(() => Vm.CopySelectionAsync(Selected(), FileSide.Target));
-    private async void OnDeleteSelected(object sender, RoutedEventArgs e) => await Safe(() => Vm.DeleteSelectionAsync(Selected()));
-
-    private void OnKeepSource(object sender, RoutedEventArgs e) => Vm.ResolveSelection(Selected(), ConflictResolution.KeepSource);
-    private void OnKeepTarget(object sender, RoutedEventArgs e) => Vm.ResolveSelection(Selected(), ConflictResolution.KeepTarget);
-    private void OnKeepBoth(object sender, RoutedEventArgs e) => Vm.ResolveSelection(Selected(), ConflictResolution.KeepBoth);
-    private void OnIgnoreConflict(object sender, RoutedEventArgs e) => Vm.ResolveSelection(Selected(), ConflictResolution.Skip);
-
-    // ------------------------------------------------------------------ marcar / desmarcar o que será executado e seleção por cartão
-
-    private void OnMarkSelected(object sender, RoutedEventArgs e) => Vm.SetIncluded(Selected(), true);
-    private void OnUnmarkSelected(object sender, RoutedEventArgs e) => Vm.SetIncluded(Selected(), false);
-
-    private void OnIncludeOnlySelected(object sender, RoutedEventArgs e)
-    {
-        var selected = Selected();
-        if (selected.Count == 0) { MessageBox.Show("Selecione na lista os itens que deseja executar.", "Marcar somente os selecionados", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        Vm.IncludeOnly(selected);
-    }
-
-    /// <summary>Espaço alterna a marca dos selecionados: se todos já estão marcados, desmarca; senão marca todos.</summary>
-    private void ToggleSelectedIncluded()
-    {
-        var rows = Selected().Where(r => r.CanInclude).ToList();
-        if (rows.Count > 0) Vm.SetIncluded(rows, !rows.All(r => r.IsIncluded));
-    }
-
-    /// <summary>Clique num item de "Ações previstas" (Copiar, Atualizar...): seleciona os itens dele, como os cartões.</summary>
-    private void OnPlanItemClick(object sender, MouseButtonEventArgs e)
-    {
-        if (((FrameworkElement)sender).DataContext is SummaryEntry entry && Vm.SelectRowsCommand.CanExecute(entry))
-            Vm.SelectRowsCommand.Execute(entry);
-    }
-
-    /// <summary>
-    /// Seleciona na grade exatamente as linhas pedidas. A grade do WPF é lenta para adicionar milhares de itens um a um,
-    /// então escolhe o caminho mais curto: "selecionar tudo e tirar o que sobra" quando a maioria é selecionada.
-    /// </summary>
-    private void OnSelectRows(IReadOnlyList<ItemRow> rows)
-    {
-        var grid = ItemsGrid;
-        grid.UnselectAll();
-        if (rows.Count == 0) return;
-
-        var total = grid.Items.Count;
-        if (rows.Count >= total) grid.SelectAll();
-        else if (rows.Count <= total - rows.Count)
-            foreach (var r in rows) grid.SelectedItems.Add(r);
-        else
-        {
-            grid.SelectAll();
-            var keep = new HashSet<ItemRow>(rows);
-            foreach (var r in grid.Items.OfType<ItemRow>().Where(r => !keep.Contains(r)).ToList())
-                grid.SelectedItems.Remove(r);
-        }
-
-        grid.ScrollIntoView(rows[0]);
-        grid.Focus();
-    }
-
-    /// <summary>Handlers async void: uma exceção aqui derrubaria o aplicativo, então ela é mostrada em vez de propagada.</summary>
     private static async Task Safe(Func<Task> action)
     {
         try { await action(); }
@@ -150,9 +118,52 @@ public partial class ComparisonView : UserControl
         }
     }
 
-    // ------------------------------------------------------------------ painel "Opções avançadas"
+    private void OnPathDragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            e.Effects = DragDropEffects.Copy;
+            e.Handled = true;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+    }
 
-    /// <summary>Botão "Mais opções...": só abre/fecha o painel de opções (comportamento puramente visual).</summary>
-    private void OnToggleOptions(object sender, RoutedEventArgs e) =>
-        OptionsExpander.IsExpanded = !OptionsExpander.IsExpanded;
+    private void OnSourceDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files is { Length: > 0 })
+            {
+                var path = files[0];
+                if (System.IO.File.Exists(path) && !System.IO.Directory.Exists(path))
+                {
+                    path = System.IO.Path.GetDirectoryName(path) ?? path;
+                }
+                Vm.SourcePath = path;
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnTargetDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files is { Length: > 0 })
+            {
+                var path = files[0];
+                if (System.IO.File.Exists(path) && !System.IO.Directory.Exists(path))
+                {
+                    path = System.IO.Path.GetDirectoryName(path) ?? path;
+                }
+                Vm.TargetPath = path;
+                e.Handled = true;
+            }
+        }
+    }
 }
