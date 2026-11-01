@@ -1,0 +1,146 @@
+<Window x:Class="SyncManager.Wpf.Views.Ftp.FtpChecklistDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls"
+        Title="Checklist Pré-Transferência FTP / FTPS"
+        Width="880" Height="680" MinWidth="750" MinHeight="550"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource AppWindow}"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Cabeçalho -->
+        <Border Grid.Row="0" Margin="0,0,0,12" Padding="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource IconAnalyze}" Width="30" Height="30" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource PageTitle}">
+                        <Run Text="Checklist de Sincronização: "/>
+                        <Run Text="{Binding Task.Name, Mode=OneWay}" Foreground="{DynamicResource PrimaryBrush}"/>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource PageSubtitle}" Text="Revise as ações calculadas pelo algoritmo de comparação antes de aplicar as alterações."/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Barra de Filtros e Seleção Rápida -->
+        <Border Grid.Row="1" Margin="0,0,0,8" Padding="10,6" Style="{StaticResource PanelBorder}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Seleção rápida:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Button Content="Todos" Style="{StaticResource SecondaryButton}" Command="{Binding SelectAllCommand}" Padding="10,3" Margin="0,0,6,0"/>
+                    <Button Content="Nenhum" Style="{StaticResource SecondaryButton}" Command="{Binding SelectNoneCommand}" Padding="10,3" Margin="0,0,6,0"/>
+                    <Button Content="Apenas Uploads" Style="{StaticResource SecondaryButton}" Command="{Binding SelectOnlyUploadsCommand}" Padding="10,3"/>
+                </StackPanel>
+
+                <!-- Resumo dos Itens -->
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Selecionados: " FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding SelectedItemsCount}" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}"/>
+                    <TextBlock Text=" / "/>
+                    <TextBlock Text="{Binding TotalItemsCount}"/>
+                    <TextBlock Text=" (" Margin="4,0,0,0"/>
+                    <TextBlock Text="{Binding FormattedTotalBytes}" FontWeight="SemiBold"/>
+                    <TextBlock Text=")  |  "/>
+
+                    <TextBlock Text="Envios: " Foreground="{DynamicResource SuccessBrush}"/>
+                    <TextBlock Text="{Binding UploadCount}" FontWeight="Bold" Foreground="{DynamicResource SuccessBrush}"/>
+                    <TextBlock Text="  |  Exclusões: " Foreground="{DynamicResource DangerBrush}"/>
+                    <TextBlock Text="{Binding DeleteCount}" FontWeight="Bold" Foreground="{DynamicResource DangerBrush}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Tabela de Itens do Checklist -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserAddRows="False"
+                  CanUserDeleteRows="False" SelectionMode="Single" RowHeight="28">
+            <DataGrid.Columns>
+                <!-- Checkbox de Seleção -->
+                <DataGridTemplateColumn Width="45">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Ação -->
+                <DataGridTemplateColumn Header="Ação Prevista" Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border CornerRadius="3" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Action}" Value="Upload">
+                                                <Setter Property="Background" Value="#1B5E20"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Action}" Value="Download">
+                                                <Setter Property="Background" Value="#0D47A1"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Action}" Value="DeleteRemote">
+                                                <Setter Property="Background" Value="#B71C1C"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Action}" Value="DeleteLocal">
+                                                <Setter Property="Background" Value="#B71C1C"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Action}" Value="Ignore">
+                                                <Setter Property="Background" Value="#424242"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding Action}" Foreground="White" FontWeight="Bold" FontSize="11"/>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Caminho do Arquivo -->
+                <DataGridTextColumn Header="Arquivo / Caminho Relativo" Binding="{Binding RelativePath}" Width="2*" MinWidth="200"/>
+
+                <!-- Tamanho -->
+                <DataGridTextColumn Header="Tamanho" Binding="{Binding FormattedSize}" Width="100"/>
+
+                <!-- Motivo da Ação -->
+                <DataGridTextColumn Header="Motivo" Binding="{Binding Reason}" Width="1.5*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Alerta de Confirmação de Risco (Exclusões) -->
+        <Border Grid.Row="3" Margin="0,10,0,0" Padding="12,8" Style="{StaticResource PanelBorder}"
+                BorderBrush="{DynamicResource DangerBrush}" Visibility="{Binding RequiresRiskConfirmation, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="ATENÇÃO: Operação com Exclusão Remota de Arquivos Detectada!" FontWeight="Bold" Foreground="{DynamicResource DangerBrush}"/>
+                <TextBlock Text="A sincronização excluirá permanentemente arquivos no servidor FTP remoto. Certifique-se de que possui backups caso necessário."
+                           Style="{StaticResource SmallMutedText}" Margin="0,2,0,6"/>
+                <CheckBox IsChecked="{Binding ConfirmedRisk}"
+                          Content="Estou ciente e autorizo a exclusão dos arquivos marcados no servidor remoto."
+                          FontWeight="Bold" Foreground="{DynamicResource DangerBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Barra Inferior de Ações -->
+        <Border Grid.Row="4" Margin="0,14,0,0" Padding="0,10,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+            <Grid>
+                <Button HorizontalAlignment="Left" Content="Cancelar e Fechar" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CloseCommand}" Padding="16,7"/>
+
+                <Button HorizontalAlignment="Right" Content="Iniciar Transferência" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding ExecuteTransferCommand}" Padding="24,7" FontWeight="Bold"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls"
         xmlns:pages="clr-namespace:SyncManager.Wpf.Views.Pages"
+        xmlns:ftp="clr-namespace:SyncManager.Wpf.Views.Ftp"
         Title="{Binding WindowTitle}"
         Width="1400" Height="920" MinWidth="1050" MinHeight="680"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen">
@@ -36,6 +37,12 @@
                     <Button x:Name="NavProfiles" Style="{StaticResource NavButton}" Content="Perfis" Command="{Binding ManageProfilesCommand}"
                             Tag="{Binding ProfilesNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconProfiles}"
                             ToolTip="Gerenciar perfis salvos"/>
+                    <Button x:Name="NavFtpConnections" Style="{StaticResource NavButton}" Content="Conexões FTP" Command="{Binding ShowFtpConnectionsCommand}"
+                            Tag="{Binding FtpConnectionsNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconServer}"
+                            ToolTip="Gerenciar conexões FTP / FTPS"/>
+                    <Button x:Name="NavFtpTasks" Style="{StaticResource NavButton}" Content="Tarefas FTP" Command="{Binding ShowFtpTasksCommand}"
+                            Tag="{Binding FtpTasksNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconGlobe}"
+                            ToolTip="Tarefas e checklist de sincronização FTP"/>
                     <Button x:Name="NavHistory" Style="{StaticResource NavButton}" Content="Histórico" Command="{Binding ShowHistoryCommand}"
                             Tag="{Binding HistoryNavTag}" Padding="10,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconHistory}"
                             ToolTip="Histórico de execuções"/>
@@ -66,6 +73,12 @@
             <pages:HistoryView x:Name="HistoryPage" Visibility="{Binding IsHistoryScreen, Converter={StaticResource BoolToVis}}"/>
             <pages:LogsView x:Name="LogsPage" Visibility="{Binding IsLogsScreen, Converter={StaticResource BoolToVis}}"/>
             <pages:SettingsView x:Name="SettingsPage" Visibility="{Binding IsSettingsScreen, Converter={StaticResource BoolToVis}}"/>
+            <Grid Visibility="{Binding IsFtpConnectionsScreen, Converter={StaticResource BoolToVis}}">
+                <ftp:FtpConnectionsView x:Name="FtpConnectionsPage" DataContext="{Binding FtpConnections}"/>
+            </Grid>
+            <Grid Visibility="{Binding IsFtpTasksScreen, Converter={StaticResource BoolToVis}}">
+                <ftp:FtpTasksView x:Name="FtpTasksPage" DataContext="{Binding FtpTasks}"/>
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>

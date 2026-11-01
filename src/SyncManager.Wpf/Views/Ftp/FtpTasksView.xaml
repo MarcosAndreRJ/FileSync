@@ -1,0 +1,109 @@
+<UserControl x:Class="SyncManager.Wpf.Views.Ftp.FtpTasksView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style x:Key="DetailLabel" TargetType="TextBlock" BasedOn="{StaticResource SmallMutedText}">
+            <Setter Property="Margin" Value="0,10,0,2"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="16,12,16,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Cabeçalho -->
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource IconSync}" Width="32" Height="32" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource PageTitle}" Text="Tarefas de Sincronização FTP / FTPS"/>
+                    <TextBlock Style="{StaticResource PageSubtitle}" Text="Configurações salvas de sincronização com servidores remotos e travas de segurança ativas."/>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="Atualizar" Style="{StaticResource SecondaryButton}" Command="{Binding RefreshCommand}" Margin="0,0,8,0" Padding="14,6"/>
+                <Button Content="Nova Tarefa" Style="{StaticResource PrimaryButton}" Command="{Binding NewTaskCommand}" Padding="18,6" ctl:Icon.Data="{StaticResource IconAdd}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Tabela de Tarefas e Painel Lateral -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="340"/>
+            </Grid.ColumnDefinitions>
+
+            <DataGrid ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}" AutoGenerateColumns="False"
+                      IsReadOnly="True" SelectionMode="Single" RowHeight="32">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Nome da Tarefa" Binding="{Binding Name}" Width="1.3*" MinWidth="130"/>
+                    <DataGridTextColumn Header="Pasta Local" Binding="{Binding SourceLocalPath}" Width="1.5*" MinWidth="140"/>
+                    <DataGridTextColumn Header="Diretório Remoto" Binding="{Binding TargetRemotePath}" Width="1.3*" MinWidth="120"/>
+                    <DataGridTextColumn Header="Método" Binding="{Binding SyncMethod}" Width="120"/>
+                    <DataGridTemplateColumn Header="Segurança" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ProhibitRemoteDeletions, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Painel de Detalhes da Tarefa -->
+            <Border Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="12,0,0,0" Padding="16"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Detalhes da Tarefa" Style="{StaticResource CardTitle}"/>
+
+                        <TextBlock Text="Nome" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedTask.Name}" FontWeight="SemiBold"/>
+
+                        <TextBlock Text="Origem Local" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedTask.SourceLocalPath}" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Destino Remoto" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedTask.TargetRemotePath}" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Método de Sincronização" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedTask.SyncMethod}" FontWeight="SemiBold"/>
+
+                        <TextBlock Text="Estratégia de Comparação" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedTask.ComparisonStrategy}"/>
+
+                        <TextBlock Text="Tolerância de Timestamp" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedTask.TimestampToleranceSeconds, StringFormat='{}{0} segundos'}"/>
+
+                        <TextBlock Text="Travas de Segurança Ativas" Style="{StaticResource DetailLabel}"/>
+                        <StackPanel Margin="0,4,0,0">
+                            <TextBlock Text="• Proibir exclusões remotas" Visibility="{Binding SelectedTask.ProhibitRemoteDeletions, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding SelectedTask.MaxRemoteDeletePercentage, StringFormat='• Limite de exclusão: {0:P0}'}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="• Exigir confirmação manual" Visibility="{Binding SelectedTask.RequireExplicitChecklistConfirmation, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource PrimaryBrush}"/>
+                        </StackPanel>
+
+                        <Border Margin="0,16,0,0" Padding="0,12,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+                            <StackPanel>
+                                <Button Content="Comparar e Visualizar Checklist" Style="{StaticResource PrimaryButton}"
+                                        Command="{Binding RunTaskCommand}" Margin="0,0,0,8" Padding="12,7"/>
+                                <Button Content="Editar Configurações" Style="{StaticResource SecondaryButton}"
+                                        Command="{Binding EditTaskCommand}" Margin="0,0,0,8" Padding="12,6"/>
+                                <Button Content="Excluir Tarefa" Style="{StaticResource DangerButton}"
+                                        Command="{Binding DeleteTaskCommand}" Padding="12,6"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

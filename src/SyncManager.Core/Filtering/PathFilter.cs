@@ -70,6 +70,19 @@ public sealed class PathFilter
             var body = wildcards ? GlobToRegex(p) : Regex.Escape(p);
             var pattern = anchored ? $"^{body}$" : fullPath ? $@"(^|\\){body}$" : $"^{body}$";
             rules.Add(new Rule(new Regex(pattern, (caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase) | RegexOptions.CultureInvariant | RegexOptions.Compiled), dirOnly, fullPath));
+
+            // Se o padrão terminar com \* (ex: vendor\* ou storage\logs\*), também exclui a pasta correspondente
+            if (p.EndsWith("\\*"))
+            {
+                var dirPrefix = p[..^2];
+                if (dirPrefix.Length > 0)
+                {
+                    var dirHasSep = dirPrefix.Contains('\\');
+                    var dirBody = wildcards ? GlobToRegex(dirPrefix) : Regex.Escape(dirPrefix);
+                    var dirPat = anchored ? $"^{dirBody}$" : dirHasSep ? $@"(^|\\){dirBody}$" : $"^{dirBody}$";
+                    rules.Add(new Rule(new Regex(dirPat, (caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase) | RegexOptions.CultureInvariant | RegexOptions.Compiled), true, dirHasSep || anchored));
+                }
+            }
         }
         return rules;
     }
@@ -83,6 +96,7 @@ public sealed class PathFilter
             if (c == '*')
             {
                 if (i + 1 < glob.Length && glob[i + 1] == '*') { sb.Append(".*"); i++; }
+                else if (i == glob.Length - 1 && i > 0 && glob[i - 1] == '\\') { sb.Append(".*"); }
                 else sb.Append(@"[^\\]*");
             }
             else if (c == '?') sb.Append(@"[^\\]");

@@ -88,6 +88,73 @@ public sealed class Database
             """),
         (3, "Pastas no histórico de sincronização", """
             ALTER TABLE FileSyncStates ADD COLUMN IsDirectory INTEGER NOT NULL DEFAULT 0;
+            """),
+        (4, "Módulo de Sincronização FTP/FTPS", """
+            CREATE TABLE FtpConnections(
+                Id TEXT PRIMARY KEY,
+                Name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                Host TEXT NOT NULL,
+                Port INTEGER NOT NULL,
+                Protocol INTEGER NOT NULL,
+                Username TEXT NOT NULL,
+                CredentialIdentifier TEXT NOT NULL,
+                TransferMode INTEGER NOT NULL,
+                RequireTls12OrHigher INTEGER NOT NULL DEFAULT 1,
+                CertificatePinning INTEGER NOT NULL DEFAULT 0,
+                ExpectedCertificateThumbprint TEXT NULL,
+                DefaultLocalPath TEXT NOT NULL,
+                DefaultRemotePath TEXT NOT NULL,
+                MaxParallelConnections INTEGER NOT NULL DEFAULT 4,
+                TimeoutSeconds INTEGER NOT NULL DEFAULT 30,
+                PreserveModTime INTEGER NOT NULL DEFAULT 1,
+                SendKeepAlive INTEGER NOT NULL DEFAULT 1,
+                CreatedAt TEXT NOT NULL,
+                LastUsedAt TEXT NULL);
+
+            CREATE TABLE FtpTasks(
+                Id TEXT PRIMARY KEY,
+                Name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                Description TEXT NOT NULL,
+                ConnectionProfileId TEXT NOT NULL REFERENCES FtpConnections(Id) ON DELETE CASCADE,
+                SourceLocalPath TEXT NOT NULL,
+                TargetRemotePath TEXT NOT NULL,
+                Method INTEGER NOT NULL,
+                IncludedPathsJson TEXT NOT NULL,
+                ExclusionPatternsJson TEXT NOT NULL,
+                RequireChecklistApproval INTEGER NOT NULL DEFAULT 1,
+                BackupBeforeOverwrite INTEGER NOT NULL DEFAULT 1,
+                ProhibitRemoteDeletions INTEGER NOT NULL DEFAULT 1,
+                CreatedAt TEXT NOT NULL,
+                LastExecutedAt TEXT NULL);
+
+            CREATE TABLE FtpHistory(
+                Id TEXT PRIMARY KEY,
+                TaskId TEXT NOT NULL,
+                TaskName TEXT NOT NULL,
+                ConnectionName TEXT NOT NULL,
+                ExecutedAt TEXT NOT NULL,
+                Status INTEGER NOT NULL,
+                TotalFiles INTEGER NOT NULL,
+                ProcessedFiles INTEGER NOT NULL,
+                FailedFiles INTEGER NOT NULL,
+                TotalBytesTransferred INTEGER NOT NULL,
+                DurationMs INTEGER NOT NULL,
+                ErrorMessage TEXT NULL,
+                FilesAffectedJson TEXT NOT NULL);
+            CREATE INDEX IX_FtpHistory_Task ON FtpHistory(TaskId, ExecutedAt DESC);
+            CREATE INDEX IX_FtpHistory_Executed ON FtpHistory(ExecutedAt DESC);
+            """),
+        (5, "Recursos Avançados FTP e Webhooks", """
+            ALTER TABLE FtpConnections ADD COLUMN DefaultWebhookUrl TEXT NULL;
+            ALTER TABLE FtpConnections ADD COLUMN DefaultWebhookType INTEGER NOT NULL DEFAULT 0;
+
+            ALTER TABLE FtpTasks ADD COLUMN UseAtomicUpload INTEGER NOT NULL DEFAULT 1;
+            ALTER TABLE FtpTasks ADD COLUMN WebhookUrl TEXT NULL;
+            ALTER TABLE FtpTasks ADD COLUMN WebhookType INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE FtpTasks ADD COLUMN NotifyOnCompletion INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE FtpTasks ADD COLUMN FrameworkPreset INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE FtpTasks ADD COLUMN EnableMaintenanceMode INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE FtpTasks ADD COLUMN MaintenanceFileName TEXT NULL DEFAULT '.maintenance';
             """)
     };
 
