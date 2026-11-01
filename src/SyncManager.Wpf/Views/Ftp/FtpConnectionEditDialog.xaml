@@ -1,0 +1,163 @@
+<Window x:Class="SyncManager.Wpf.Views.Ftp.FtpConnectionEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls"
+        Title="Configurar Conexão FTP / FTPS"
+        Width="640" Height="680" MinWidth="580" MinHeight="620"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource AppWindow}"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style x:Key="FormFieldLabel" TargetType="TextBlock" BasedOn="{StaticResource SmallMutedText}">
+            <Setter Property="Margin" Value="0,10,0,3"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Cabeçalho -->
+        <Border Grid.Row="0" Margin="0,0,0,16" Padding="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource IconSettings}" Width="28" Height="28" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource PageTitle}" Text="Perfil de Conexão FTP / FTPS"/>
+                    <TextBlock Style="{StaticResource PageSubtitle}" Text="Informe as credenciais e parâmetros de segurança da conexão remota."/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Formulário com Scroll -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,8,0">
+                <!-- Nome do Perfil -->
+                <TextBlock Text="Nome Amigável do Perfil" Style="{StaticResource FormFieldLabel}"/>
+                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="110"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Host / IP -->
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="Servidor Host ou Endereço IP" Style="{StaticResource FormFieldLabel}"/>
+                        <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                    </StackPanel>
+                    <!-- Porta -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Porta" Style="{StaticResource FormFieldLabel}"/>
+                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Protocolo -->
+                <TextBlock Text="Protocolo de Segurança" Style="{StaticResource FormFieldLabel}"/>
+                <ComboBox ItemsSource="{Binding AvailableProtocols}" SelectedItem="{Binding Protocol}" Padding="8,6"/>
+
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Usuário -->
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="Nome de Usuário" Style="{StaticResource FormFieldLabel}"/>
+                        <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                    </StackPanel>
+                    <!-- Senha -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Senha (Cofre Seguro DPAPI)" Style="{StaticResource FormFieldLabel}"/>
+                        <PasswordBox x:Name="UserPasswordBox" PasswordChanged="OnPasswordChanged" Padding="8,6"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Diretórios Padrão -->
+                <TextBlock Text="Caminho Remoto Padrão (ex: /public_html/ ou /files/)" Style="{StaticResource FormFieldLabel}"/>
+                <TextBox Text="{Binding Profile.DefaultRemotePath, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+
+                <!-- Expander de Opções Avançadas -->
+                <Expander Header="Opções Avançadas e Parâmetros de Criptografia TLS" Margin="0,16,0,0" IsExpanded="False">
+                    <Border Style="{StaticResource PanelBorder}" Margin="0,8,0,0" Padding="14">
+                        <StackPanel>
+                            <!-- Modo de Transferência -->
+                            <TextBlock Text="Modo de Transferência FTP" Style="{StaticResource FormFieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding AvailableTransferModes}" SelectedItem="{Binding TransferMode}" Padding="8,5"/>
+
+                            <!-- Trava TLS 1.2+ -->
+                            <CheckBox IsChecked="{Binding RequireTls12OrHigher}" Content="Exigir obrigatoriamente TLS 1.2 ou superior (rejeitar TLS 1.0/1.1)" Margin="0,12,0,0"/>
+
+                            <!-- Certificate Pinning -->
+                            <CheckBox IsChecked="{Binding CertificatePinning}" Content="Habilitar Certificate Pinning (validação estrita por Thumbprint SHA-256)" Margin="0,8,0,0"/>
+
+                            <StackPanel Visibility="{Binding CertificatePinning, Converter={StaticResource BoolToVis}}" Margin="0,4,0,0">
+                                <TextBlock Text="Thumbprint Esperado do Certificado (Hexadecimal)" Style="{StaticResource FormFieldLabel}"/>
+                                <TextBox Text="{Binding ExpectedCertificateThumbprint, UpdateSourceTrigger=PropertyChanged}" Padding="8,4"/>
+                            </StackPanel>
+
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Timeout -->
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="Timeout de Conexão (segundos)" Style="{StaticResource FormFieldLabel}"/>
+                                    <TextBox Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Padding="8,4"/>
+                                </StackPanel>
+                                <!-- Paralelismo -->
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Conexões Simultâneas (1 a 10)" Style="{StaticResource FormFieldLabel}"/>
+                                    <TextBox Text="{Binding MaxParallelConnections, UpdateSourceTrigger=PropertyChanged}" Padding="8,4"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Preservar Timestamp -->
+                            <CheckBox IsChecked="{Binding PreserveModTime}" Content="Tentar preservar data de modificação original via comandos MFMT / MDTM" Margin="0,10,0,0"/>
+                            <!-- Keep-Alive -->
+                            <CheckBox IsChecked="{Binding SendKeepAlive}" Content="Enviar pacotes Keep-Alive (NOOP) para prevenir timeout em conexões ociosas" Margin="0,8,0,0"/>
+
+                            <!-- Webhook de Notificações Padrão -->
+                            <TextBlock Text="Webhook de Notificações Padrão (Opcional)" Style="{StaticResource FormFieldLabel}" Margin="0,14,0,3" FontWeight="SemiBold"/>
+                            <TextBlock Text="Pode ser herdado por qualquer tarefa de sincronização vinculada a esta conexão." Style="{StaticResource SmallMutedText}" Margin="0,0,0,6"/>
+                            <Grid Margin="0,2,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="Canal / Tipo" Style="{StaticResource FormFieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding AvailableWebhookTypes}" SelectedItem="{Binding DefaultWebhookType}" Padding="8,4"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="URL do Webhook" Style="{StaticResource FormFieldLabel}"/>
+                                    <TextBox Text="{Binding DefaultWebhookUrl, UpdateSourceTrigger=PropertyChanged}" Padding="8,4"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button HorizontalAlignment="Left" Content="Testar Webhook Padrão" Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding TestDefaultWebhookCommand}" Margin="0,8,0,0" Padding="12,4"/>
+                        </StackPanel>
+                    </Border>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Barra Inferior de Ações -->
+        <Border Grid.Row="2" Margin="0,16,0,0" Padding="0,12,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+            <Grid>
+                <Button HorizontalAlignment="Left" Content="Testar Conexão / Diagnóstico" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding TestConnectionCommand}" Padding="14,7"/>
+
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button Content="Cancelar" Style="{StaticResource SecondaryButton}" Click="OnCancelClick" Margin="0,0,8,0" Padding="18,7"/>
+                    <Button Content="Salvar Conexão" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" Padding="22,7"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

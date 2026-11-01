@@ -1,11 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SyncManager.Application;
+using SyncManager.Application.Ftp;
 using SyncManager.Core.Abstractions;
 using SyncManager.Core.Comparison;
 using SyncManager.Core.Execution;
 using SyncManager.Core.Planning;
 using SyncManager.Core.Scanning;
+using SyncManager.Infrastructure.Ftp;
+using SyncManager.Infrastructure.Security;
 using SyncManager.Persistence;
 
 namespace SyncManager.Infrastructure;
@@ -40,6 +43,25 @@ public static class ServiceRegistration
         services.AddSingleton<ISchedulerService>(_ => new TaskSchedulerService(
             new TaskSchedulerOptions(cliPath ?? Path.Combine(AppContext.BaseDirectory, CliFileName),
                 DatabasePath: string.Equals(Path.GetFullPath(databasePath), Path.GetFullPath(Database.DefaultPath), StringComparison.OrdinalIgnoreCase) ? null : Path.GetFullPath(databasePath))));
+
+        // Módulo FTP / FTPS
+        services.AddSingleton<IFtpCredentialStore, DpapiFtpCredentialStore>();
+        services.AddSingleton<IFtpConnectionRepository, FtpConnectionRepository>();
+        services.AddSingleton<IFtpTaskRepository, FtpTaskRepository>();
+        services.AddSingleton<IFtpHistoryRepository, FtpHistoryRepository>();
+        services.AddSingleton<IFluentFtpClientFactory, FluentFtpClientFactory>();
+        services.AddSingleton<IFtpDirectoryBrowser, FtpDirectoryBrowser>();
+        services.AddSingleton<IFtpComparisonEngine, FtpComparisonEngine>();
+        services.AddSingleton<IFtpTransferEngine, FtpTransferEngine>();
+        services.AddSingleton<IFtpNotificationService, FtpNotificationService>();
+        services.AddSingleton<IFtpDiagnosticService, FtpDiagnosticService>();
+        services.AddSingleton<IFtpConnectionService, FtpConnectionService>();
+        services.AddSingleton<FtpConnectionService>(sp => (FtpConnectionService)sp.GetRequiredService<IFtpConnectionService>());
+        services.AddSingleton<IFtpTaskService, FtpTaskService>();
+        services.AddSingleton<FtpTaskService>(sp => (FtpTaskService)sp.GetRequiredService<IFtpTaskService>());
+        services.AddSingleton<IFtpHistoryService, FtpHistoryService>();
+        services.AddSingleton<FtpHistoryService>(sp => (FtpHistoryService)sp.GetRequiredService<IFtpHistoryService>());
+
         return services;
     }
 }
