@@ -62,12 +62,20 @@ public class Phase4UiTests : IDisposable
 
     private static DataGrid Grid(Window w) => UiFind.ByName<DataGrid>(w, "ItemsGrid");
 
+    private static IReadOnlyList<ItemRow> SelectedRows(Window w, MainViewModel vm) =>
+        Grid(w).SelectedItems.OfType<ComparisonTreeNode>()
+            .Select(n => n.RelativePath)
+            .Select(p => vm.RowsView!.Cast<ItemRow>().FirstOrDefault(r => string.Equals(r.Item.RelativePath, p, StringComparison.OrdinalIgnoreCase)))
+            .Where(r => r != null)
+            .Cast<ItemRow>()
+            .ToList();
+
     private static void Select(Window w, MainViewModel vm, params string[] paths)
     {
         var grid = Grid(w);
         grid.SelectedItems.Clear();
-        foreach (var row in vm.RowsView!.Cast<ItemRow>().Where(r => paths.Contains(r.Item.RelativePath, StringComparer.OrdinalIgnoreCase)))
-            grid.SelectedItems.Add(row);
+        foreach (var node in vm.TreeManager.FlatVisibleRows.Where(n => paths.Contains(n.RelativePath, StringComparer.OrdinalIgnoreCase)))
+            grid.SelectedItems.Add(node);
         Assert.Equal(paths.Length, grid.SelectedItems.Count);
     }
 
@@ -347,12 +355,12 @@ public class Phase4UiTests : IDisposable
 
                 // selecionar uma linha sem conflito avisa e não altera o plano
                 Select(w, vm, "other.txt");
-                vm.ResolveSelection(Grid(w).SelectedItems.OfType<ItemRow>().ToList(), ConflictResolution.KeepSource);
+                vm.ResolveSelection(SelectedRows(w, vm), ConflictResolution.KeepSource);
                 Assert.Single(d.Infos);
                 Assert.Equal(1, vm.ConflictCount);
 
                 Select(w, vm, "clash.txt");
-                vm.ResolveSelection(Grid(w).SelectedItems.OfType<ItemRow>().ToList(), ConflictResolution.KeepTarget);
+                vm.ResolveSelection(SelectedRows(w, vm), ConflictResolution.KeepTarget);
                 await UiThread.Settle();
                 Assert.False(vm.HasConflicts);
                 var row = vm.RowsView!.Cast<ItemRow>().Single(r => r.Item.RelativePath == "clash.txt");
@@ -382,7 +390,7 @@ public class Phase4UiTests : IDisposable
             try
             {
                 Select(w, vm, "c.txt");
-                vm.ResolveSelection(Grid(w).SelectedItems.OfType<ItemRow>().ToList(), ConflictResolution.KeepBoth);
+                vm.ResolveSelection(SelectedRows(w, vm), ConflictResolution.KeepBoth);
                 var row = vm.RowsView!.Cast<ItemRow>().Single();
                 Assert.Equal(3, row.Operations.Count);
                 Assert.Contains("MANTER AMBOS", row.ActionText);

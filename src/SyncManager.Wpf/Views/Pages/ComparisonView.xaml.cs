@@ -15,6 +15,38 @@ public partial class ComparisonView : UserControl
     public ComparisonView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.OldValue is MainViewModel oldVm)
+        {
+            oldVm.SelectRowsRequested -= OnSelectRowsRequested;
+        }
+        if (e.NewValue is MainViewModel newVm)
+        {
+            newVm.SelectRowsRequested += OnSelectRowsRequested;
+        }
+    }
+
+    private void OnSelectRowsRequested(IReadOnlyList<ItemRow> rows)
+    {
+        ItemsGrid.SelectedItems.Clear();
+        if (rows.Count == 0 || Vm?.TreeManager is null) return;
+        if (rows.Count == Vm.TreeManager.FlatVisibleRows.Count)
+        {
+            ItemsGrid.SelectAll();
+            return;
+        }
+        var rowPaths = new HashSet<string>(rows.Select(r => r.Item.RelativePath), StringComparer.OrdinalIgnoreCase);
+        foreach (var node in Vm.TreeManager.FlatVisibleRows)
+        {
+            if (rowPaths.Contains(node.RelativePath))
+            {
+                ItemsGrid.SelectedItems.Add(node);
+            }
+        }
     }
 
     private MainViewModel Vm => (MainViewModel)DataContext;
