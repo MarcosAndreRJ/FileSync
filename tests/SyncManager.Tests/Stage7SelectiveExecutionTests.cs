@@ -119,49 +119,53 @@ public class Stage7SelectiveExecutionTests : IDisposable
                 await UiThread.Settle();
                 var grid = UiFind.ByName<DataGrid>(w, "ItemsGrid");
 
-                var cards = Descendants<SummaryCard>(w).ToList();
-                var sourceOnly = cards.First(c => c.Label == "Só na origem");
-                Assert.True(sourceOnly.Focusable);           // tem comando: é clicável
-                Assert.Contains("clique", sourceOnly.Hint);
-
-                // clique de verdade no cartão
-                sourceOnly.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.MouseLeftButtonUpEvent });
+                // "Ações previstas" e cartões/resumos selecionam
+                vm.SelectRowsCommand.Execute(vm.ComparisonSummary.First(c => c.Label == "Só na origem"));
                 await UiThread.Settle();
-                var selected = grid.SelectedItems.OfType<ItemRow>().ToList();
-                Assert.Equal(new[] { "novo.txt" }, selected.Select(r => r.Item.RelativePath));
+                var selected = grid.SelectedItems.OfType<ComparisonTreeNode>().ToList();
+                Assert.Equal(new[] { "novo.txt" }, selected.Select(r => r.RelativePath));
                 Assert.Contains("1 item(ns) selecionado(s): Só na origem", vm.StatusMessage);
 
-                Click(cards.First(c => c.Label == "Iguais"));
-                Assert.Equal(new[] { "igual.txt" }, grid.SelectedItems.OfType<ItemRow>().Select(r => r.Item.RelativePath));
+                vm.SelectRowsCommand.Execute(vm.ComparisonSummary.First(c => c.Label == "Iguais"));
+                await UiThread.Settle();
+                Assert.Equal(new[] { "igual.txt" }, grid.SelectedItems.OfType<ComparisonTreeNode>().Select(r => r.RelativePath));
 
-                Click(cards.First(c => c.Label == "Só no destino"));
-                Assert.Equal(new[] { "extra.txt" }, grid.SelectedItems.OfType<ItemRow>().Select(r => r.Item.RelativePath));
+                vm.SelectRowsCommand.Execute(vm.ComparisonSummary.First(c => c.Label == "Só no destino"));
+                await UiThread.Settle();
+                Assert.Equal(new[] { "extra.txt" }, grid.SelectedItems.OfType<ComparisonTreeNode>().Select(r => r.RelativePath));
 
-                Click(cards.First(c => c.Label == "Analisados"));
+                vm.SelectRowsCommand.Execute(vm.ComparisonSummary.First(c => c.Label == "Analisados"));
+                await UiThread.Settle();
                 Assert.Equal(4, grid.SelectedItems.Count);
 
                 // um filtro que esconderia os itens é desfeito antes de selecionar
                 vm.ShowErrorsCommand.Execute(null);
                 await UiThread.Settle();
-                Click(cards.First(c => c.Label == "Iguais"));
+                vm.SelectRowsCommand.Execute(vm.ComparisonSummary.First(c => c.Label == "Iguais"));
+                await UiThread.Settle();
                 Assert.Equal("Todos", vm.SelectedStatusFilter.Label);
                 Assert.Single(grid.SelectedItems);
 
                 // cartão vazio: nada selecionado e aviso
-                Click(cards.First(c => c.Label == "Conflitos"));
+                vm.SelectRowsCommand.Execute(vm.ComparisonSummary.First(c => c.Label == "Conflitos"));
+                await UiThread.Settle();
                 Assert.Empty(grid.SelectedItems);
                 Assert.Contains("Nenhum item", vm.StatusMessage);
 
                 // "Ações previstas" também selecionam
                 var copiar = vm.PlanSummary.First(p => p.Label == "Copiar");
                 vm.SelectRowsCommand.Execute(copiar);
-                Assert.Equal(new[] { "novo.txt" }, grid.SelectedItems.OfType<ItemRow>().Select(r => r.Item.RelativePath));
+                await UiThread.Settle();
+                Assert.Equal(new[] { "novo.txt" }, grid.SelectedItems.OfType<ComparisonTreeNode>().Select(r => r.RelativePath));
                 vm.SelectRowsCommand.Execute(vm.PlanSummary.First(p => p.Label == "Excluir"));
-                Assert.Equal(new[] { "extra.txt" }, grid.SelectedItems.OfType<ItemRow>().Select(r => r.Item.RelativePath));
+                await UiThread.Settle();
+                Assert.Equal(new[] { "extra.txt" }, grid.SelectedItems.OfType<ComparisonTreeNode>().Select(r => r.RelativePath));
                 vm.SelectRowsCommand.Execute(vm.PlanSummary.First(p => p.Label == "Atualizar"));
-                Assert.Equal(new[] { "mudou.txt" }, grid.SelectedItems.OfType<ItemRow>().Select(r => r.Item.RelativePath));
+                await UiThread.Settle();
+                Assert.Equal(new[] { "mudou.txt" }, grid.SelectedItems.OfType<ComparisonTreeNode>().Select(r => r.RelativePath));
                 vm.SelectRowsCommand.Execute(vm.PlanSummary.First(p => p.Label == "Ignorar"));
-                Assert.Equal(new[] { "igual.txt" }, grid.SelectedItems.OfType<ItemRow>().Select(r => r.Item.RelativePath));
+                await UiThread.Settle();
+                Assert.Equal(new[] { "igual.txt" }, grid.SelectedItems.OfType<ComparisonTreeNode>().Select(r => r.RelativePath));
             }
             finally { w.Close(); }
         });
@@ -337,7 +341,7 @@ public class Stage7SelectiveExecutionTests : IDisposable
 
                 // Espaço alterna os selecionados
                 grid.SelectedItems.Clear();
-                foreach (var r in vm.RowsView!.Cast<ItemRow>().Where(r => r.CanInclude)) grid.SelectedItems.Add(r);
+                foreach (var r in vm.TreeManager.FlatVisibleRows.Where(r => r.CanInclude)) grid.SelectedItems.Add(r);
                 grid.Focus();
                 var e = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(grid)!, 0, Key.Space) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
                 grid.RaiseEvent(e);

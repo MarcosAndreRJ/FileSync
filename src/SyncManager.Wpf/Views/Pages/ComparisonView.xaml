@@ -136,7 +136,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Text="{Binding SourcePath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Height="32"
+                            <TextBox x:Name="SourcePathBox" Text="{Binding SourcePath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Height="32"
                                      AllowDrop="True" PreviewDragOver="OnPathDragOver" Drop="OnSourceDrop"/>
                             <Button Grid.Column="1" Command="{Binding BrowseSourceCommand}" ctl:Icon.Data="{StaticResource IconFolder}"
                                     Padding="10,6" Margin="4,0,0,0" ToolTip="Procurar pasta de origem"/>
@@ -155,7 +155,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Text="{Binding TargetPath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Height="32"
+                            <TextBox x:Name="TargetPathBox" Text="{Binding TargetPath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Height="32"
                                      AllowDrop="True" PreviewDragOver="OnPathDragOver" Drop="OnTargetDrop"/>
                             <Button Grid.Column="1" Command="{Binding BrowseTargetCommand}" ctl:Icon.Data="{StaticResource IconFolder}"
                                     Padding="10,6" Margin="4,0,0,0" ToolTip="Procurar pasta de destino"/>
@@ -166,7 +166,7 @@
                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,0,1">
                         <Button Content="Comparar" Style="{StaticResource PrimaryButton}" Command="{Binding CompareCommand}"
                                 ctl:Icon.Data="{StaticResource IconSearch}" Padding="18,7" MinWidth="110"/>
-                        <Button Content="Visualizar plano" Command="{Binding PreviewCommand}"
+                        <Button x:Name="TabPlan" Content="Visualizar plano" Command="{Binding PreviewCommand}"
                                 ctl:Icon.Data="{StaticResource IconDocument}" Padding="14,7" Margin="0,0,8,0"/>
                         <Button Content="Executar" Style="{StaticResource SuccessButton}" Command="{Binding ExecuteCommand}"
                                 ctl:Icon.Data="{StaticResource IconPlay}" Padding="18,7" MinWidth="110"/>
@@ -361,7 +361,7 @@
 
                         <DataGrid.Columns>
                             <!-- ORIGEM: Checkbox -->
-                            <DataGridTemplateColumn Width="38" CanUserResize="False">
+                            <DataGridTemplateColumn Header="Exec." Width="38" CanUserResize="False">
                                 <DataGridTemplateColumn.HeaderTemplate>
                                     <DataTemplate><CheckBox ToolTip="Marcar/Desmarcar todos" Click="OnHeaderCheckAll"/></DataTemplate>
                                 </DataGridTemplateColumn.HeaderTemplate>
@@ -369,7 +369,8 @@
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                  Visibility="{Binding CanInclude, Converter={StaticResource BoolToVis}}"/>
+                                                  Visibility="{Binding CanInclude, Converter={StaticResource BoolToVis}}"
+                                                  AutomationProperties.Name="Executar este item"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
