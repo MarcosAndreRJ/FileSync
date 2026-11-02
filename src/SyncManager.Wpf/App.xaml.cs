@@ -2,15 +2,18 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SyncManager.Application;
+using SyncManager.Application.Ftp;
 using SyncManager.Core.Abstractions;
 using SyncManager.Core.Comparison;
 using SyncManager.Core.Execution;
+using SyncManager.Core.Models;
 using SyncManager.Core.Planning;
 using SyncManager.Core.Scanning;
 using SyncManager.Infrastructure;
 using SyncManager.Persistence;
 using SyncManager.Wpf.Services;
 using SyncManager.Wpf.ViewModels;
+using SyncManager.Wpf.ViewModels.Ftp;
 using SyncManager.Wpf.Views;
 
 namespace SyncManager.Wpf;
@@ -38,6 +41,40 @@ public partial class App : System.Windows.Application
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<ScheduleViewModel>();
         services.AddTransient<ProfileEditorViewModel>();
+        services.AddTransient<FtpConnectionsViewModel>();
+        services.AddTransient<FtpTasksViewModel>();
+
+        // Fábricas de ViewModels para diálogos do módulo FTP
+        services.AddTransient<Func<FtpConnectionProfile, string, FtpDiagnosticsViewModel>>(sp =>
+            (profile, password) => new FtpDiagnosticsViewModel(profile, password, sp.GetRequiredService<IFtpDiagnosticService>()));
+
+        services.AddTransient<Func<FtpConnectionProfile, FtpConnectionEditViewModel>>(sp =>
+            profile => new FtpConnectionEditViewModel(
+                profile,
+                sp.GetRequiredService<IFtpConnectionService>(),
+                sp.GetRequiredService<Func<FtpConnectionProfile, string, FtpDiagnosticsViewModel>>(),
+                sp.GetService<IFtpNotificationService>()));
+
+        services.AddTransient<Func<FtpSyncTask, IReadOnlyList<FtpChecklistItem>, FtpExecutionViewModel>>(sp =>
+            (task, items) => new FtpExecutionViewModel(
+                task,
+                items,
+                sp.GetRequiredService<IFtpTransferEngine>(),
+                sp.GetRequiredService<IFtpConnectionService>(),
+                sp.GetRequiredService<IFtpHistoryRepository>()));
+
+        services.AddTransient<Func<FtpSyncTask, IReadOnlyList<FtpChecklistItem>, FtpChecklistViewModel>>(sp =>
+            (task, items) => new FtpChecklistViewModel(
+                task,
+                items,
+                sp.GetRequiredService<Func<FtpSyncTask, IReadOnlyList<FtpChecklistItem>, FtpExecutionViewModel>>()));
+
+        services.AddTransient<Func<FtpSyncTask, FtpTaskEditViewModel>>(sp =>
+            task => new FtpTaskEditViewModel(
+                task,
+                sp.GetRequiredService<IFtpTaskService>(),
+                sp.GetRequiredService<IFtpConnectionService>(),
+                sp.GetService<IFtpNotificationService>()));
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();

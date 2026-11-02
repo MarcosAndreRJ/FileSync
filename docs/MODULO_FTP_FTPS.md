@@ -39,20 +39,20 @@ A suíte do protótipo é composta por 15 telas de alta fidelidade armazenadas e
 
 | ID | Tela | Arquivo de Imagem | Propósito Principal |
 | :---: | :--- | :--- | :--- |
-| **01** | Visão Geral FTP/FTPS | `01_Painel_inicial.png` | Dashboard de conexões salvas, tarefas ativas e alertas de produção |
-| **02** | Credenciais da Conexão | `02_Gerenciar_conexoes.png` | Configuração de Host, Porta, Protocolo FTPS, Usuário e Cofre DPAPI |
-| **03** | Segurança e Certificados TLS | `03_Nova_conexao_geral.png` / `04_Conexao_seguranca.png` | Nível TLS 1.3/1.2, validação de CA e Certificate Pinning |
-| **04** | Pastas Iniciais Remotas | `04_Pastas_iniciais_remotas.png` | Mapeamento de diretório local padrão e raiz remota no servidor |
-| **05** | Opções Avançadas | `05_Opcoes_avancadas_FTP.png` | Conexões paralelas, timeouts, MFMT (ModTime) e Keep-Alive NOOP |
-| **06** | Diagnóstico de Conexão | `06_Teste_conexao.png` | Validação detalhada de DNS, TCP, TLS, Certificado, PASV e MFMT |
-| **07** | Wizard Nova Tarefa: Conexão | `07_Tarefas_salvas.png` | Vínculo de uma conexão salva à nova tarefa de sincronização |
-| **08** | Wizard: Diretórios | `08_Nova_tarefa_geral.png` | Definição das pastas de origem (local) e destino (remoto) |
-| **09** | Wizard: Método de Sincronização | `09_Metodo_sincronizacao.png` | Atualizar, Espelhar, Copiar Novos ou Baixar + Travas de Segurança |
-| **10** | Wizard: Escopo Persistente | `10_Selecao_persistente.png` | Seleção permanente de árvore de pastas permitidas na tarefa |
-| **11** | Wizard: Filtros e Exceções | `11_Filtros_excecoes.png` | Regras de inclusão/exclusão (proteção de `.env`, `.git`, `node_modules`) |
+| **01** | Painel Inicial e Visão Geral FTP/FTPS | `01_Painel_inicial.png` | Dashboard de conexões salvas, tarefas ativas e alertas de produção |
+| **02** | Gerenciamento de Conexões Salvas | `02_Gerenciar_conexoes.png` | Listagem e gerenciamento de hosts remotos homologados |
+| **03** | Nova Conexão: Configurações Gerais | `03_Nova_conexao_geral.png` | Host, Porta, Protocolo FTPS, Usuário, Senha no Cofre DPAPI e PASV |
+| **04** | Nova Conexão: Segurança TLS | `04_Conexao_seguranca.png` | Nível TLS 1.3/1.2, validação de CA, inspeção e Certificate Pinning |
+| **05** | Diagnóstico e Teste de Conexão | `05_Teste_conexao.png` | Validação de DNS, TCP, TLS, Certificado, Autenticação, PASV e MFMT |
+| **06** | Navegador Remoto e Pastas Iniciais | `06_Navegador_FTP.png` | Árvore de navegação remota no servidor e mapeamento da pasta inicial |
+| **07** | Tarefas Salvas e Ações Rápidas | `07_Tarefas_salvas.png` | Painel de tarefas configuradas com execução rápida e histórico |
+| **08** | Nova Tarefa: Origem e Destino | `08_Nova_tarefa_geral.png` | Mapeamento explícito de diretório local (origem) e remoto (destino) |
+| **09** | Nova Tarefa: Método de Sincronização | `09_Metodo_sincronizacao.png` | Atualizar, Espelhar, Copiar Novos ou Baixar + Travas de Segurança |
+| **10** | Nova Tarefa: Escopo Persistente | `10_Selecao_persistente.png` | Seleção permanente de árvore de pastas permitidas na tarefa |
+| **11** | Nova Tarefa: Filtros e Exceções | `11_Filtros_excecoes.png` | Regras de inclusão/exclusão (proteção de `.env`, `.git`, `node_modules`) |
 | **12** | Comparação FTP/FTPS | `12_Comparacao_FTP.png` | Grid dual de diferenças (novo, atualizado, idêntico, conflitos) |
-| **13** | Checklist Obrigatório | `13_Checklist_obrigatorio.png` | Aprovação formal das 198 operações antes de qualquer escrita remota |
-| **14** | Progresso da Transferência | `14_Progresso_transferencia.png` | Acompanhamento em tempo real, velocidade MB/s, ETA, fila e log |
+| **13** | Checklist Obrigatório Pré-Execução | `13_Checklist_obrigatorio.png` | Aprovação formal das operações antes de qualquer escrita remota |
+| **14** | Monitoramento de Transferência | `14_Progresso_transferencia.png` | Acompanhamento em tempo real, velocidade MB/s, ETA, fila e log |
 | **15** | Histórico e Auditoria | `15_Historico_FTP.png` | Registro forense de execuções, arquivos alterados e exportação CSV |
 
 ---
@@ -75,10 +75,15 @@ A suíte do protótipo é composta por 15 telas de alta fidelidade armazenadas e
 
 ---
 
-### Telas 02, 03, 04 e 05 — Gerenciamento e Configuração de Conexão
+### Telas 02, 03, 04, 05 e 06 — Conexões e Diagnóstico de Servidor
 
-#### 02: Credenciais e Servidor
-![Credenciais da Conexão](images/ftp/02_Gerenciar_conexoes.png)
+#### Tela 02: Gerenciamento de Conexões Salvas
+![Gerenciar Conexões](images/ftp/02_Gerenciar_conexoes.png)
+- Listagem de todas as conexões cadastradas com status de criptografia, tipo de protocolo, porta e host.
+- Ações rápidas de Testar Conexão, Editar, Clonar e Excluir.
+
+#### Tela 03: Nova Conexão — Configurações Gerais
+![Nova Conexão - Geral](images/ftp/03_Nova_conexao_geral.png)
 - **Campos Principais:**
   - `Nome da Conexão`: Identificador amigável (ex.: `SmartKonta API`).
   - `Servidor (Host)` e `Porta`: Endereço FQDN/IP e porta (padrão 21 para FTPS explícito, 990 para implícito).
@@ -87,7 +92,7 @@ A suíte do protótipo é composta por 15 telas de alta fidelidade armazenadas e
   - `Modo de Transferência`: Passivo (`PASV` - recomendado para firewalls/NAT) ou Ativo (`PORT`).
   - `Codificação`: UTF-8 obrigatório para compatibilidade com nomes de arquivos complexos e acentuados.
 
-#### 03: Segurança e Certificados TLS
+#### Tela 04: Nova Conexão — Segurança e Certificados TLS
 ![Segurança TLS e Certificados](images/ftp/04_Conexao_seguranca.png)
 - **Nível de Criptografia:** Exigência mínima de TLS 1.2 com cifras seguras (GCM/AES).
 - **Inspeção de Certificado:**
@@ -98,22 +103,7 @@ A suíte do protótipo é composta por 15 telas de alta fidelidade armazenadas e
   - Certificate Pinning: Bloqueia a conexão caso a chave pública ou hash do certificado seja alterada sem autorização.
   - Bloqueio estrito de conexões sem criptografia.
 
-#### 04: Definição de Pastas Iniciais
-![Pastas Iniciais](images/ftp/06_Navegador_FTP.png)
-- **Pasta Local Padrão:** Caminho absoluto do repositório/projeto local.
-- **Pasta Remota Inicial:** Caminho no servidor (ex.: `/api.smartkonta.com.br/public_html`).
-- **Navegador em Árvore:** Exploração de diretórios remotos direto na interface para seleção precisa da raiz de sincronização.
-
-#### 05: Opções Avançadas e Performance
-![Opções Avançadas](images/ftp/05_Teste_conexao.png)
-- **Conexões Paralelas:** Controle de threads simultâneas de transferência (padrão 4 conexões).
-- **Timeouts:** Timeout de conexão e de dados (30 segundos).
-- **Comando MFMT / MDTM:** Habilitação mandatória para preservação de datas de modificação.
-- **Keep-Alive:** Envio de pacotes periódicos `NOOP` a cada 60s para evitar desconexão por inatividade.
-
----
-
-### Tela 06 — Diagnóstico e Teste de Conexão
+#### Tela 05: Diagnóstico e Teste de Conexão
 ![Teste de Conexão](images/ftp/05_Teste_conexao.png)
 
 A tela de diagnóstico executa um teste completo e auditável composto por 8 etapas:
@@ -125,6 +115,17 @@ A tela de diagnóstico executa um teste completo e auditável composto por 8 eta
 6. `Modo Passivo (PASV)`: Abertura do canal de dados de alta velocidade.
 7. `Listagem de Diretório`: Execução de `MLSD` ou `LIST` com leitura de itens.
 8. `Suporte a ModTime`: Teste do comando `MFMT` para carimbo de data/hora.
+
+#### Tela 06: Navegador Remoto e Pastas Iniciais
+![Navegador FTP](images/ftp/06_Navegador_FTP.png)
+- **Pasta Local Padrão:** Caminho absoluto do repositório/projeto local.
+- **Pasta Remota Inicial:** Caminho no servidor (ex.: `/api.smartkonta.com.br/public_html`).
+- **Navegador em Árvore:** Exploração de diretórios remotos direto na interface para seleção precisa da raiz de sincronização.
+- **Opções Avançadas e Performance:**
+  - Conexões Paralelas (threads de transferência, padrão 4).
+  - Timeouts de conexão e dados (30s).
+  - Comando `MFMT` / `MDTM` habilitado para preservação de ModTime.
+  - Pacotes de Keep-Alive `NOOP` periódicos.
 
 ---
 

@@ -1,0 +1,208 @@
+<Window x:Class="SyncManager.Wpf.Views.Ftp.FtpTaskEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls"
+        Title="Configurar Tarefa de Sincronização FTP / FTPS"
+        Width="660" Height="700" MinWidth="600" MinHeight="640"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource AppWindow}"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style x:Key="FormFieldLabel" TargetType="TextBlock" BasedOn="{StaticResource SmallMutedText}">
+            <Setter Property="Margin" Value="0,10,0,3"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Cabeçalho -->
+        <Border Grid.Row="0" Margin="0,0,0,16" Padding="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource IconSync}" Width="28" Height="28" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource PageTitle}" Text="Tarefa de Sincronização FTP"/>
+                    <TextBlock Style="{StaticResource PageSubtitle}" Text="Defina as regras de mapeamento de pastas, métodos de comparação e travas de segurança."/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Formulário com Scroll -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,8,0">
+                <!-- Nome da Tarefa -->
+                <TextBlock Text="Nome da Tarefa" Style="{StaticResource FormFieldLabel}"/>
+                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+
+                <!-- Seleção do Perfil de Conexão -->
+                <TextBlock Text="Perfil de Conexão FTP / Servidor Remoto" Style="{StaticResource FormFieldLabel}"/>
+                <ComboBox ItemsSource="{Binding AvailableProfiles}" SelectedItem="{Binding SelectedProfile}" DisplayMemberPath="Name" Padding="8,6"/>
+
+                <!-- Pasta Local de Origem -->
+                <TextBlock Text="Pasta Local (Origem)" Style="{StaticResource FormFieldLabel}"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding SourceLocalPath, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                    <Button Grid.Column="1" Content="Procurar..." Style="{StaticResource SecondaryButton}"
+                            Command="{Binding BrowseLocalFolderCommand}" Margin="8,0,0,0" Padding="14,6"/>
+                </Grid>
+
+                <!-- Diretório Remoto de Destino -->
+                <TextBlock Text="Diretório Remoto FTP (Destino)" Style="{StaticResource FormFieldLabel}"/>
+                <TextBox Text="{Binding TargetRemotePath, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Método de Sincronização -->
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="Método de Sincronização" Style="{StaticResource FormFieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding AvailableSyncMethods}" SelectedItem="{Binding SyncMethod}" Padding="8,6"/>
+                    </StackPanel>
+                    <!-- Estratégia de Comparação -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Estratégia de Comparação" Style="{StaticResource FormFieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding AvailableStrategies}" SelectedItem="{Binding ComparisonStrategy}" Padding="8,6"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Tolerância de Timestamp -->
+                <TextBlock Text="Tolerância de Timestamp (segundos - padrão 2s para servidores FAT/FTP)" Style="{StaticResource FormFieldLabel}"/>
+                <TextBox Text="{Binding TimestampToleranceSeconds, UpdateSourceTrigger=PropertyChanged}" Padding="8,4" Width="120" HorizontalAlignment="Left"/>
+
+                <!-- Predefinições de Framework / CMS -->
+                <Border Style="{StaticResource PanelBorder}" Margin="0,12,0,0" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="Predefinições de Framework / CMS" Style="{StaticResource CardTitle}"/>
+                        <TextBlock Text="Selecione a tecnologia da aplicação para carregar automaticamente regras recomendadas de exclusão (como wp-config, .env, storage/, node_modules/)."
+                                   Style="{StaticResource SmallMutedText}" Margin="0,2,0,8" TextWrapping="Wrap"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox ItemsSource="{Binding AvailableFrameworkPresets}" SelectedItem="{Binding FrameworkPreset}" Padding="8,6"/>
+                            <Button Grid.Column="1" Content="Inserir Regras Recomendadas" Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding ApplyPresetExclusionsCommand}" Margin="8,0,0,0" Padding="12,6"/>
+                        </Grid>
+                        <TextBlock Text="{Binding FrameworkPresetDescription}" Style="{StaticResource SmallMutedText}" Margin="0,6,0,0" Foreground="{DynamicResource PrimaryBrush}" FontWeight="SemiBold"/>
+                        <TextBlock Text="* Nota: Regras de .ftpignore na raiz local e proteções do framework são incorporadas automaticamente durante o escaneamento."
+                                   Style="{StaticResource SmallMutedText}" Margin="0,4,0,0" FontStyle="Italic"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Padrões de Exclusão -->
+                <TextBlock Text="Padrões de Exclusão Adicionais (um por linha, ex: *.tmp, node_modules/, .git/)" Style="{StaticResource FormFieldLabel}"/>
+                <TextBox Text="{Binding ExcludePatternsText, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" Height="70" VerticalScrollBarVisibility="Auto" Padding="8,4" FontFamily="Consolas, Courier New, monospace"/>
+
+                <!-- Safe Deploy & Modo de Manutenção -->
+                <Border Style="{StaticResource PanelBorder}" Margin="0,12,0,0" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="Safe Deploy &amp; Modo de Manutenção" Style="{StaticResource CardTitle}"/>
+
+                        <CheckBox IsChecked="{Binding UseAtomicUpload}"
+                                  Content="Upload Atômico Seguro (.ftptmp -> rename após upload bem-sucedido)"
+                                  FontWeight="SemiBold" Margin="0,8,0,2"/>
+                        <TextBlock Text="Garante que os arquivos no servidor nunca fiquem em estado corrompido ou parcial durante uma transferência em andamento."
+                                   Style="{StaticResource SmallMutedText}" Margin="24,0,0,8" TextWrapping="Wrap"/>
+
+                        <CheckBox IsChecked="{Binding EnableMaintenanceMode}"
+                                  Content="Habilitar Modo de Manutenção durante a sincronização"
+                                  FontWeight="SemiBold" Margin="0,4,0,2"/>
+                        <TextBlock Text="Cria um arquivo de flag temporário no servidor FTP antes do deploy e o remove imediatamente após a finalização."
+                                   Style="{StaticResource SmallMutedText}" Margin="24,0,0,6" TextWrapping="Wrap"/>
+
+                        <StackPanel Visibility="{Binding EnableMaintenanceMode, Converter={StaticResource BoolToVis}}" Margin="24,0,0,0">
+                            <TextBlock Text="Nome do arquivo de manutenção (ex: .maintenance para WP ou maintenance.flag)" Style="{StaticResource FormFieldLabel}"/>
+                            <TextBox Text="{Binding MaintenanceFileName, UpdateSourceTrigger=PropertyChanged}" Padding="8,4" Width="240" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Notificações & Webhook -->
+                <Border Style="{StaticResource PanelBorder}" Margin="0,12,0,0" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="Notificações &amp; Webhook de Conclusão" Style="{StaticResource CardTitle}"/>
+
+                        <CheckBox IsChecked="{Binding NotifyOnCompletion}"
+                                  Content="Disparar notificação via Webhook após cada sincronização (sucesso/falha)"
+                                  FontWeight="SemiBold" Margin="0,8,0,4"/>
+
+                        <StackPanel Visibility="{Binding NotifyOnCompletion, Converter={StaticResource BoolToVis}}" Margin="0,4,0,0">
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="Canal / Formato" Style="{StaticResource FormFieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding AvailableWebhookTypes}" SelectedItem="{Binding WebhookType}" Padding="8,5"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="URL do Webhook (Discord, Slack, Teams ou Endpoint HTTP)" Style="{StaticResource FormFieldLabel}"/>
+                                    <TextBox Text="{Binding WebhookUrl, UpdateSourceTrigger=PropertyChanged}" Padding="8,5"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button HorizontalAlignment="Left" Content="Testar Webhook" Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding TestWebhookCommand}" Margin="0,8,0,0" Padding="14,5"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Painel de Travas de Segurança Mandatórias -->
+                <Border Style="{StaticResource PanelBorder}" Margin="0,16,0,0" Padding="14" BorderBrush="{DynamicResource WarningBrush}">
+                    <StackPanel>
+                        <TextBlock Text="Travas de Segurança Mandatórias Anti-Desastre" Style="{StaticResource CardTitle}" Foreground="{DynamicResource WarningBrush}"/>
+
+                        <!-- Trava 1: Proibir Exclusões Remotas -->
+                        <CheckBox IsChecked="{Binding ProhibitRemoteDeletions}"
+                                  Content="Trava 1: Proibir expressamente exclusões no servidor remoto (Modo Seguro de Apenas Envio)"
+                                  FontWeight="SemiBold" Margin="0,10,0,4"/>
+                        <TextBlock Text="Garante que nenhum arquivo remoto seja excluído, mesmo em modo de espelhamento."
+                                   Style="{StaticResource SmallMutedText}" Margin="24,0,0,8"/>
+
+                        <!-- Trava 2: Limite Percentual de Exclusão Remota -->
+                        <TextBlock Text="Trava 2: Limite máximo tolerado de exclusões remotas (% do total)" Style="{StaticResource FormFieldLabel}"/>
+                        <Grid Margin="0,2,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider Value="{Binding MaxRemoteDeletePercentage}" Minimum="0.01" Maximum="1.0" SmallChange="0.05" LargeChange="0.10" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding MaxRemoteDeletePercentage, StringFormat='{}{0:P0}'}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="Se o número de arquivos a deletar ultrapassar este limite, a transferência é bloqueada automaticamente."
+                                   Style="{StaticResource SmallMutedText}" Margin="0,0,0,8"/>
+
+                        <!-- Trava 3: Exigir Confirmação Explícita de Risco -->
+                        <CheckBox IsChecked="{Binding RequireExplicitChecklistConfirmation}"
+                                  Content="Trava 3: Exigir confirmação manual e verificação de risco no checklist antes de deletar qualquer arquivo"
+                                  FontWeight="SemiBold" Margin="0,6,0,4"/>
+                        <TextBlock Text="O checklist obrigará o operador a marcar a caixa de ciência de risco de exclusão antes de liberar o botão de início."
+                                   Style="{StaticResource SmallMutedText}" Margin="24,0,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Barra Inferior de Ações -->
+        <Border Grid.Row="2" Margin="0,16,0,0" Padding="0,12,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button Content="Cancelar" Style="{StaticResource SecondaryButton}" Click="OnCancelClick" Margin="0,0,8,0" Padding="18,7"/>
+                <Button Content="Salvar Tarefa" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" Padding="22,7"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,113 @@
+<UserControl x:Class="SyncManager.Wpf.Views.Ftp.FtpConnectionsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <Style x:Key="DetailLabel" TargetType="TextBlock" BasedOn="{StaticResource SmallMutedText}">
+            <Setter Property="Margin" Value="0,10,0,2"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="16,12,16,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Cabeçalho da View -->
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource IconSettings}" Width="32" Height="32" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource PageTitle}" Text="Conexões FTP / FTPS"/>
+                    <TextBlock Style="{StaticResource PageSubtitle}" Text="Gerencie perfis de servidores remotos com suporte a FTPS explícito/implícito e credenciais protegidas via DPAPI."/>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="Atualizar" Style="{StaticResource SecondaryButton}" Command="{Binding RefreshCommand}" Margin="0,0,8,0" Padding="14,6"/>
+                <Button Content="Nova Conexão" Style="{StaticResource PrimaryButton}" Command="{Binding NewConnectionCommand}" Padding="18,6" ctl:Icon.Data="{StaticResource IconAdd}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Corpo Principal: Tabela de Conexões + Painel Lateral de Detalhes -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="340"/>
+            </Grid.ColumnDefinitions>
+
+            <DataGrid ItemsSource="{Binding Connections}" SelectedItem="{Binding SelectedConnection}" AutoGenerateColumns="False"
+                      IsReadOnly="True" SelectionMode="Single" RowHeight="32">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Nome do Perfil" Binding="{Binding Name}" Width="1.4*" MinWidth="140"/>
+                    <DataGridTextColumn Header="Host / Servidor" Binding="{Binding Host}" Width="1.5*" MinWidth="150"/>
+                    <DataGridTextColumn Header="Porta" Binding="{Binding Port}" Width="65"/>
+                    <DataGridTextColumn Header="Protocolo" Binding="{Binding Protocol}" Width="110"/>
+                    <DataGridTextColumn Header="Usuário" Binding="{Binding Username}" Width="100"/>
+                    <DataGridTemplateColumn Header="TLS Exigido" Width="95">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding RequireTls12OrHigher, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Painel de Detalhes do Perfil Selecionado -->
+            <Border Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="12,0,0,0" Padding="16"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Detalhes da Conexão" Style="{StaticResource CardTitle}"/>
+
+                        <TextBlock Text="Nome" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedConnection.Name}" FontWeight="SemiBold"/>
+
+                        <TextBlock Text="Host e Porta" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock>
+                            <Run Text="{Binding SelectedConnection.Host}"/>
+                            <Run Text=":"/>
+                            <Run Text="{Binding SelectedConnection.Port}"/>
+                        </TextBlock>
+
+                        <TextBlock Text="Protocolo" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedConnection.Protocol}" FontWeight="SemiBold"/>
+
+                        <TextBlock Text="Usuário" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedConnection.Username}"/>
+
+                        <TextBlock Text="Modo de Transferência" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedConnection.TransferMode}"/>
+
+                        <TextBlock Text="Timeout de Conexão" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedConnection.TimeoutSeconds, StringFormat='{}{0} segundos'}"/>
+
+                        <TextBlock Text="Conexões Simultâneas Máximas" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedConnection.MaxParallelConnections}"/>
+
+                        <TextBlock Text="Caminho Remoto Padrão" Style="{StaticResource DetailLabel}"/>
+                        <TextBlock Text="{Binding SelectedConnection.DefaultRemotePath}"/>
+
+                        <Border Margin="0,16,0,0" Padding="0,12,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+                            <StackPanel>
+                                <Button Content="Testar Conexão / Diagnóstico" Style="{StaticResource SecondaryButton}"
+                                        Command="{Binding TestConnectionCommand}" Margin="0,0,0,8" Padding="12,6"/>
+                                <Button Content="Editar Perfil" Style="{StaticResource PrimaryButton}"
+                                        Command="{Binding EditConnectionCommand}" Margin="0,0,0,8" Padding="12,6"/>
+                                <Button Content="Excluir Conexão" Style="{StaticResource DangerButton}"
+                                        Command="{Binding DeleteConnectionCommand}" Padding="12,6"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -14,11 +14,12 @@ using SyncManager.Core.Planning;
 using SyncManager.Infrastructure;
 using SyncManager.Wpf.Mvvm;
 using SyncManager.Wpf.Services;
+using SyncManager.Wpf.ViewModels.Ftp;
 
 namespace SyncManager.Wpf.ViewModels;
 
 /// <summary>Página exibida na área de conteúdo: a comparação permanece viva por trás (seleção, filtros e rolagem não se perdem).</summary>
-public enum AppScreen { Comparison, Plan, Execution, Profiles, ProfileEditor, Schedules, History, Logs, Settings }
+public enum AppScreen { Comparison, Plan, Execution, Profiles, ProfileEditor, Schedules, History, Logs, Settings, FtpConnections, FtpTasks }
 
 public sealed record MethodOption(SyncMethod Method, string Label, string Description);
 public sealed record DeleteOption(DeleteStrategy Strategy, string Label);
@@ -142,6 +143,8 @@ public sealed class MainViewModel : ObservableObject
         ShowHistoryCommand = new AsyncRelayCommand(ShowHistoryAsync);
         ShowLogsCommand = new RelayCommand(() => GoTo(AppScreen.Logs));
         ShowSettingsCommand = new AsyncRelayCommand(ShowSettingsAsync);
+        ShowFtpConnectionsCommand = new AsyncRelayCommand(ShowFtpConnectionsAsync, () => !IsBusy);
+        ShowFtpTasksCommand = new AsyncRelayCommand(ShowFtpTasksAsync, () => !IsBusy);
         ExitCommand = new RelayCommand(() => System.Windows.Application.Current.Shutdown());
         OpenLogFolderCommand = new RelayCommand(_dialogs.OpenLogFolder);
         AboutCommand = new RelayCommand(() => _dialogs.ShowInfo("Sobre o SyncManager",
@@ -323,6 +326,8 @@ public sealed class MainViewModel : ObservableObject
     public AsyncRelayCommand ShowHistoryCommand { get; }
     public RelayCommand ShowLogsCommand { get; }
     public AsyncRelayCommand ShowSettingsCommand { get; }
+    public AsyncRelayCommand ShowFtpConnectionsCommand { get; }
+    public AsyncRelayCommand ShowFtpTasksCommand { get; }
     public RelayCommand ExitCommand { get; }
     public RelayCommand OpenLogFolderCommand { get; }
     public RelayCommand AboutCommand { get; }
@@ -415,7 +420,9 @@ public sealed class MainViewModel : ObservableObject
             if (!SetProperty(ref _screen, value)) return;
             foreach (var n in new[] { nameof(IsComparisonScreen), nameof(IsPlanScreen), nameof(IsExecutionScreen), nameof(IsProfilesScreen),
                          nameof(IsEditorScreen), nameof(IsSchedulesScreen), nameof(IsHistoryScreen), nameof(IsLogsScreen), nameof(IsSettingsScreen),
-                         nameof(ComparisonNavTag), nameof(ProfilesNavTag), nameof(SchedulesNavTag), nameof(HistoryNavTag), nameof(LogsNavTag), nameof(SettingsNavTag) })
+                         nameof(IsFtpConnectionsScreen), nameof(IsFtpTasksScreen),
+                         nameof(ComparisonNavTag), nameof(ProfilesNavTag), nameof(SchedulesNavTag), nameof(HistoryNavTag), nameof(LogsNavTag), nameof(SettingsNavTag),
+                         nameof(FtpConnectionsNavTag), nameof(FtpTasksNavTag) })
                 OnPropertyChanged(n);
             CommandManager_Invalidate();
         }
@@ -429,6 +436,8 @@ public sealed class MainViewModel : ObservableObject
     public bool IsHistoryScreen => _screen == AppScreen.History;
     public bool IsLogsScreen => _screen == AppScreen.Logs;
     public bool IsSettingsScreen => _screen == AppScreen.Settings;
+    public bool IsFtpConnectionsScreen => _screen == AppScreen.FtpConnections;
+    public bool IsFtpTasksScreen => _screen == AppScreen.FtpTasks;
 
     // item ativo da barra lateral (Plano e Execução pertencem a "Comparação"; o editor pertence a "Perfis")
     public string ComparisonNavTag => _screen is AppScreen.Comparison or AppScreen.Plan or AppScreen.Execution ? "active" : "";
@@ -437,6 +446,8 @@ public sealed class MainViewModel : ObservableObject
     public string HistoryNavTag => _screen == AppScreen.History ? "active" : "";
     public string LogsNavTag => _screen == AppScreen.Logs ? "active" : "";
     public string SettingsNavTag => _screen == AppScreen.Settings ? "active" : "";
+    public string FtpConnectionsNavTag => _screen == AppScreen.FtpConnections ? "active" : "";
+    public string FtpTasksNavTag => _screen == AppScreen.FtpTasks ? "active" : "";
 
     // páginas com ViewModel próprio (criados sob demanda pelo contêiner)
     private ProfilesViewModel? _profilesPage;
@@ -483,6 +494,30 @@ public sealed class MainViewModel : ObservableObject
             return _settingsPage;
         }
     }
+
+    private FtpConnectionsViewModel? _ftpConnectionsPage;
+    private FtpTasksViewModel? _ftpTasksPage;
+
+    public FtpConnectionsViewModel FtpConnections
+    {
+        get
+        {
+            if (_ftpConnectionsPage is not null) return _ftpConnectionsPage;
+            _ftpConnectionsPage = _services.GetRequiredService<FtpConnectionsViewModel>();
+            return _ftpConnectionsPage;
+        }
+    }
+
+    public FtpTasksViewModel FtpTasks
+    {
+        get
+        {
+            if (_ftpTasksPage is not null) return _ftpTasksPage;
+            _ftpTasksPage = _services.GetRequiredService<FtpTasksViewModel>();
+            return _ftpTasksPage;
+        }
+    }
+
     public ProfileEditorViewModel? Editor { get => _editor; private set => SetProperty(ref _editor, value); }
 
     /// <summary>
@@ -523,6 +558,18 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!GoTo(AppScreen.Settings)) return;
         await Settings.LoadAsync();
+    }
+
+    public async Task ShowFtpConnectionsAsync()
+    {
+        if (!GoTo(AppScreen.FtpConnections)) return;
+        await FtpConnections.LoadConnectionsAsync();
+    }
+
+    public async Task ShowFtpTasksAsync()
+    {
+        if (!GoTo(AppScreen.FtpTasks)) return;
+        await FtpTasks.LoadTasksAsync();
     }
 
     private async Task RefreshSettingsAsync() => _confirmBeforeExecute = (await _settings.LoadAsync()).ConfirmBeforeExecute;
