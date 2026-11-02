@@ -25,8 +25,26 @@ public class FtpDiagnosticStepResult : ObservableObject
     public FtpDiagnosticStepStatus Status
     {
         get => _status;
-        set => SetProperty(ref _status, value);
+        set
+        {
+            if (!SetProperty(ref _status, value)) return;
+            OnPropertyChanged(nameof(StatusText));
+            OnPropertyChanged(nameof(IsSuccess)); OnPropertyChanged(nameof(IsFailed)); OnPropertyChanged(nameof(IsRunningStep)); OnPropertyChanged(nameof(IsWarning));
+        }
     }
+
+    public string StatusText => _status switch
+    {
+        FtpDiagnosticStepStatus.Pending => "Pendente",
+        FtpDiagnosticStepStatus.Running => "Executando…",
+        FtpDiagnosticStepStatus.Success => "Aprovado",
+        FtpDiagnosticStepStatus.Warning => "Não suportado / não verificado",
+        _ => "Falhou"
+    };
+    public bool IsSuccess => _status == FtpDiagnosticStepStatus.Success;
+    public bool IsFailed => _status == FtpDiagnosticStepStatus.Failed;
+    public bool IsRunningStep => _status == FtpDiagnosticStepStatus.Running;
+    public bool IsWarning => _status == FtpDiagnosticStepStatus.Warning;
 
     public string Message
     {
@@ -124,14 +142,14 @@ public sealed class FtpDiagnosticsViewModel : ObservableObject
     private void InitializeSteps()
     {
         Steps.Clear();
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "1. Resolução DNS", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "2. Conexão TCP", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "3. Negociação TLS", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "4. Validação Certificado", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "5. Autenticação", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "6. Modo Passivo (PASV/EPSV)", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "7. Listagem de Diretório", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
-        Steps.Add(new FtpDiagnosticStepResult { StepName = "8. Suporte a Timestamps (MFMT/MDTM)", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Resolução do endereço do servidor (DNS)", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Conectividade TCP", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Negociação TLS", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Validação do certificado", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Autenticação do usuário", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Canal de dados (PASV/EPSV)", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Listagem do diretório remoto", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
+        Steps.Add(new FtpDiagnosticStepResult { StepName = "Recursos de ModTime (MFMT/MDTM)", Status = FtpDiagnosticStepStatus.Pending, Message = "Aguardando..." });
     }
 
     public async Task RunDiagnosticsAsync()

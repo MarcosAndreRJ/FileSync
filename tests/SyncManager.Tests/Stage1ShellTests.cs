@@ -135,6 +135,10 @@ public class Stage1ShellTests : IDisposable
             {
                 // o estilo de janela precisa valer para a classe derivada (estilo implícito de Window não vale)
                 Assert.Equal(((SolidColorBrush)System.Windows.Application.Current.Resources["BackgroundBrush"]).Color, ((SolidColorBrush)w.Background).Color);
+                Assert.Equal(AppScreen.Home, vm.CurrentScreen);                  // o aplicativo abre na tela Inicial
+                Assert.Equal("active", (string?)UiFind.ByName<Button>(w, "NavHome").Tag);
+                vm.ShowComparisonCommand.Execute(null);
+                await UiThread.Settle();
                 var page = UiFind.ByName<ComparisonView>(w, "ComparisonPage");
                 Assert.Same(vm, page.DataContext);                               // estado único: sobrevive à navegação
                 Assert.NotNull(UiFind.TryByName<DataGrid>(w, "ItemsGrid"));      // a lista existe dentro da página

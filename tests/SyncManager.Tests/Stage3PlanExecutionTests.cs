@@ -90,6 +90,7 @@ public class Stage3PlanExecutionTests : IDisposable
             try
             {
                 await Prepare(vm, Source, Target);
+                vm.ShowComparisonCommand.Execute(null);   // o app agora abre na tela Inicial
                 await UiThread.Settle();
                 Assert.True(vm.IsComparisonScreen);
 

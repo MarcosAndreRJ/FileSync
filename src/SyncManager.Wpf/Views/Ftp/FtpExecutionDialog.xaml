@@ -62,13 +62,13 @@
                 <Grid Margin="0,0,0,4">
                     <TextBlock Text="Progresso Global da Sincronização" FontWeight="SemiBold"/>
                     <TextBlock HorizontalAlignment="Right">
-                        <Run Text="{Binding CompletedFilesCount}"/>
+                        <Run Text="{Binding CompletedFilesCount, Mode=OneWay}"/>
                         <Run Text=" de "/>
-                        <Run Text="{Binding TotalFilesCount}"/>
+                        <Run Text="{Binding TotalFilesCount, Mode=OneWay}"/>
                         <Run Text=" arquivos ("/>
-                        <Run Text="{Binding FormattedTransferredBytes}"/>
+                        <Run Text="{Binding FormattedTransferredBytes, Mode=OneWay}"/>
                         <Run Text=" / "/>
-                        <Run Text="{Binding FormattedTotalBytes}"/>
+                        <Run Text="{Binding FormattedTotalBytes, Mode=OneWay}"/>
                         <Run Text=")"/>
                     </TextBlock>
                 </Grid>
@@ -98,9 +98,9 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock FontFamily="Consolas, Courier New, monospace" FontSize="11" Margin="0,2">
-                                    <Run Text="{Binding Timestamp, StringFormat='[{0:HH:mm:ss}]'}" Foreground="#888888"/>
+                                    <Run Text="{Binding Timestamp, Mode=OneWay, StringFormat='[{0:HH:mm:ss}]'}" Foreground="#888888"/>
                                     <Run Text=" "/>
-                                    <Run Text="{Binding Severity, StringFormat='[{0}]'}">
+                                    <Run Text="{Binding Severity, Mode=OneWay, StringFormat='[{0}]'}">
                                         <Run.Style>
                                             <Style TargetType="Run">
                                                 <Style.Triggers>
@@ -121,7 +121,7 @@
                                         </Run.Style>
                                     </Run>
                                     <Run Text=" "/>
-                                    <Run Text="{Binding Message}" Foreground="#DCDCDC"/>
+                                    <Run Text="{Binding Message, Mode=OneWay}" Foreground="#DCDCDC"/>
                                 </TextBlock>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

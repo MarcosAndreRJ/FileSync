@@ -84,6 +84,7 @@ public class Phase4UiTests : IDisposable
         var vm = NewVm(sp, d);
         var window = new MainWindow(vm);
         window.Show();
+        vm.ShowComparisonCommand.Execute(null);   // o app abre na tela Inicial; estes testes exercitam a Comparação
         vm.SourcePath = source;
         vm.TargetPath = target;
         vm.SelectedMethod = vm.Methods.First(m => m.Method == method);

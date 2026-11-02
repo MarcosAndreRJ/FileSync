@@ -155,6 +155,13 @@ public sealed class Database
             ALTER TABLE FtpTasks ADD COLUMN FrameworkPreset INTEGER NOT NULL DEFAULT 0;
             ALTER TABLE FtpTasks ADD COLUMN EnableMaintenanceMode INTEGER NOT NULL DEFAULT 0;
             ALTER TABLE FtpTasks ADD COLUMN MaintenanceFileName TEXT NULL DEFAULT '.maintenance';
+            """),
+        (6, "Selecao persistente FTP (excecoes) e parametros de comparacao", """
+            ALTER TABLE FtpTasks ADD COLUMN ExcludedPathsJson TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE FtpTasks ADD COLUMN ComparisonStrategy INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE FtpTasks ADD COLUMN TimestampToleranceSeconds INTEGER NOT NULL DEFAULT 2;
+            ALTER TABLE FtpTasks ADD COLUMN MaxRemoteDeletePercentage REAL NOT NULL DEFAULT 0.2;
+            ALTER TABLE FtpTasks ADD COLUMN RequireExplicitChecklistConfirmation INTEGER NOT NULL DEFAULT 1;
             """)
     };
 

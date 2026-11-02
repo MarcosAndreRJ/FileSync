@@ -398,9 +398,11 @@ public class FtpAdvancedFeaturesTests : IDisposable
 
         vm.ApplyPresetExclusionsCommand.Execute(null);
 
-        Assert.Contains("wp-config.php", vm.ExcludePatternsText);
-        Assert.Contains("wp-content/uploads/", vm.ExcludePatternsText);
-        Assert.Contains("*.tmp", vm.ExcludePatternsText);
+        var patterns = vm.Exclusions.Select(e => e.Text).ToList();
+        Assert.Contains("wp-config.php", patterns);
+        Assert.Contains("wp-content/uploads/", patterns);
+        Assert.Contains("*.tmp", patterns);
+        Assert.Equal(patterns, task.ExcludePatterns);   // a tarefa recebe as regras
     }
 
     [Fact]

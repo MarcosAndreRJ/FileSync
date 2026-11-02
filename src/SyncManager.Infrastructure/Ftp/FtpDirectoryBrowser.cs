@@ -16,9 +16,10 @@ public sealed class FtpDirectoryBrowser : IFtpDirectoryBrowser
     public async Task<IReadOnlyList<FtpRemoteItem>> ListDirectoryAsync(
         FtpConnectionProfile profile,
         string remotePath,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? explicitPassword = null)
     {
-        var client = await _clientFactory.CreateClientAsync(profile, null, null, ct);
+        var client = await _clientFactory.CreateClientAsync(profile, explicitPassword, null, ct);
         try
         {
             await client.Connect(ct);

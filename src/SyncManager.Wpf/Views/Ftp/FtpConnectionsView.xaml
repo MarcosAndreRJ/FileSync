@@ -31,7 +31,7 @@
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button Content="Atualizar" Style="{StaticResource SecondaryButton}" Command="{Binding RefreshCommand}" Margin="0,0,8,0" Padding="14,6"/>
-                <Button Content="Nova Conexão" Style="{StaticResource PrimaryButton}" Command="{Binding NewConnectionCommand}" Padding="18,6" ctl:Icon.Data="{StaticResource IconAdd}"/>
+                <Button x:Name="NewConnectionButton" Content="Nova conexão" Style="{StaticResource PrimaryButton}" Command="{Binding NewConnectionCommand}" Padding="18,6" ctl:Icon.Data="{StaticResource IconAdd}"/>
             </StackPanel>
         </Grid>
 
@@ -53,7 +53,20 @@
                     <DataGridTemplateColumn Header="TLS Exigido" Width="95">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding RequireTls12OrHigher, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold"/>
+                                <TextBlock FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Não"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RequireTls12OrHigher}" Value="True">
+                                                    <Setter Property="Text" Value="Sim"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -72,9 +85,9 @@
 
                         <TextBlock Text="Host e Porta" Style="{StaticResource DetailLabel}"/>
                         <TextBlock>
-                            <Run Text="{Binding SelectedConnection.Host}"/>
+                            <Run Text="{Binding SelectedConnection.Host, Mode=OneWay}"/>
                             <Run Text=":"/>
-                            <Run Text="{Binding SelectedConnection.Port}"/>
+                            <Run Text="{Binding SelectedConnection.Port, Mode=OneWay}"/>
                         </TextBlock>
 
                         <TextBlock Text="Protocolo" Style="{StaticResource DetailLabel}"/>
@@ -99,6 +112,8 @@
                             <StackPanel>
                                 <Button Content="Testar Conexão / Diagnóstico" Style="{StaticResource SecondaryButton}"
                                         Command="{Binding TestConnectionCommand}" Margin="0,0,0,8" Padding="12,6"/>
+                                <Button Content="Navegar no servidor" Style="{StaticResource SecondaryButton}"
+                                        Command="{Binding BrowseCommand}" Margin="0,0,0,8" Padding="12,6"/>
                                 <Button Content="Editar Perfil" Style="{StaticResource PrimaryButton}"
                                         Command="{Binding EditConnectionCommand}" Margin="0,0,0,8" Padding="12,6"/>
                                 <Button Content="Excluir Conexão" Style="{StaticResource DangerButton}"

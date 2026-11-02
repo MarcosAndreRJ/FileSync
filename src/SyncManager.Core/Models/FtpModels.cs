@@ -89,6 +89,11 @@ public class FtpSyncTask
     public List<string> IncludedRelativePaths { get; set; } = [];
 
     /// <summary>
+    /// Exceções persistentes dentro do escopo incluído (subpastas ou arquivos específicos que NÃO devem ser sincronizados).
+    /// </summary>
+    public List<string> ExcludedRelativePaths { get; set; } = [];
+
+    /// <summary>
     /// Padrões glob para arquivos e diretórios a excluir (ex: .env*, **/.git/**, **/node_modules/**).
     /// </summary>
     public List<string> ExclusionPatterns { get; set; } =
@@ -146,6 +151,7 @@ public class FtpSyncTask
             TargetRemotePath = TargetRemotePath,
             Method = Method,
             IncludedRelativePaths = [.. IncludedRelativePaths],
+            ExcludedRelativePaths = [.. ExcludedRelativePaths],
             ExclusionPatterns = [.. ExclusionPatterns],
             RequireChecklistApproval = RequireChecklistApproval,
             BackupBeforeOverwrite = BackupBeforeOverwrite,

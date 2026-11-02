@@ -19,7 +19,7 @@ using SyncManager.Wpf.ViewModels.Ftp;
 namespace SyncManager.Wpf.ViewModels;
 
 /// <summary>Página exibida na área de conteúdo: a comparação permanece viva por trás (seleção, filtros e rolagem não se perdem).</summary>
-public enum AppScreen { Comparison, Plan, Execution, Profiles, ProfileEditor, Schedules, History, Logs, Settings, FtpConnections, FtpTasks }
+public enum AppScreen { Home, Comparison, Plan, Execution, Profiles, ProfileEditor, Schedules, History, Logs, Settings, FtpConnections, FtpTasks }
 
 public sealed record MethodOption(SyncMethod Method, string Label, string Description);
 public sealed record DeleteOption(DeleteStrategy Strategy, string Label);
@@ -138,6 +138,7 @@ public sealed class MainViewModel : ObservableObject
         NewProfileCommand = new RelayCommand(NewProfile, () => !IsBusy);
         SaveProfileCommand = new AsyncRelayCommand(SaveProfileAsync, () => !IsBusy);
         ManageProfilesCommand = new AsyncRelayCommand(ShowProfilesAsync, () => !IsBusy);
+        ShowHomeCommand = new AsyncRelayCommand(ShowHomeAsync, () => !IsBusy);
         ShowComparisonCommand = new RelayCommand(() => GoTo(AppScreen.Comparison));
         ShowSchedulesCommand = new AsyncRelayCommand(ShowSchedulesAsync, () => !IsBusy);
         ShowHistoryCommand = new AsyncRelayCommand(ShowHistoryAsync);
@@ -321,6 +322,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand NewProfileCommand { get; }
     public AsyncRelayCommand SaveProfileCommand { get; }
     public AsyncRelayCommand ManageProfilesCommand { get; }
+    public AsyncRelayCommand ShowHomeCommand { get; }
     public RelayCommand ShowComparisonCommand { get; }
     public AsyncRelayCommand ShowSchedulesCommand { get; }
     public AsyncRelayCommand ShowHistoryCommand { get; }
@@ -409,7 +411,7 @@ public sealed class MainViewModel : ObservableObject
     public bool BottomExpanded { get => _bottomExpanded; set => SetProperty(ref _bottomExpanded, value); }
 
     // ---- navegação entre Comparação / Plano / Execução
-    private AppScreen _screen = AppScreen.Comparison;
+    private AppScreen _screen = AppScreen.Home;
     private PlanPreviewViewModel? _plan;
 
     public AppScreen CurrentScreen
@@ -418,15 +420,16 @@ public sealed class MainViewModel : ObservableObject
         private set
         {
             if (!SetProperty(ref _screen, value)) return;
-            foreach (var n in new[] { nameof(IsComparisonScreen), nameof(IsPlanScreen), nameof(IsExecutionScreen), nameof(IsProfilesScreen),
+            foreach (var n in new[] { nameof(IsHomeScreen), nameof(IsComparisonScreen), nameof(IsPlanScreen), nameof(IsExecutionScreen), nameof(IsProfilesScreen),
                          nameof(IsEditorScreen), nameof(IsSchedulesScreen), nameof(IsHistoryScreen), nameof(IsLogsScreen), nameof(IsSettingsScreen),
                          nameof(IsFtpConnectionsScreen), nameof(IsFtpTasksScreen),
-                         nameof(ComparisonNavTag), nameof(ProfilesNavTag), nameof(SchedulesNavTag), nameof(HistoryNavTag), nameof(LogsNavTag), nameof(SettingsNavTag),
+                         nameof(HomeNavTag), nameof(ComparisonNavTag), nameof(ProfilesNavTag), nameof(SchedulesNavTag), nameof(HistoryNavTag), nameof(LogsNavTag), nameof(SettingsNavTag),
                          nameof(FtpConnectionsNavTag), nameof(FtpTasksNavTag) })
                 OnPropertyChanged(n);
             CommandManager_Invalidate();
         }
     }
+    public bool IsHomeScreen => _screen == AppScreen.Home;
     public bool IsComparisonScreen => _screen == AppScreen.Comparison;
     public bool IsPlanScreen => _screen == AppScreen.Plan;
     public bool IsExecutionScreen => _screen == AppScreen.Execution;
@@ -440,6 +443,7 @@ public sealed class MainViewModel : ObservableObject
     public bool IsFtpTasksScreen => _screen == AppScreen.FtpTasks;
 
     // item ativo da barra lateral (Plano e Execução pertencem a "Comparação"; o editor pertence a "Perfis")
+    public string HomeNavTag => _screen == AppScreen.Home ? "active" : "";
     public string ComparisonNavTag => _screen is AppScreen.Comparison or AppScreen.Plan or AppScreen.Execution ? "active" : "";
     public string ProfilesNavTag => _screen is AppScreen.Profiles or AppScreen.ProfileEditor ? "active" : "";
     public string SchedulesNavTag => _screen == AppScreen.Schedules ? "active" : "";
@@ -450,10 +454,35 @@ public sealed class MainViewModel : ObservableObject
     public string FtpTasksNavTag => _screen == AppScreen.FtpTasks ? "active" : "";
 
     // páginas com ViewModel próprio (criados sob demanda pelo contêiner)
+    private HomeViewModel? _homePage;
     private ProfilesViewModel? _profilesPage;
     private HistoryViewModel? _historyPage;
     private SettingsViewModel? _settingsPage;
     private ProfileEditorViewModel? _editor;
+
+    public HomeViewModel Home
+    {
+        get
+        {
+            if (_homePage is not null) return _homePage;
+            _homePage = _services.GetRequiredService<HomeViewModel>();
+            _homePage.NewComparisonRequested += () => GoTo(AppScreen.Comparison);
+            _homePage.NewProfileRequested += () => NewProfile();
+            _homePage.OpenProfilesRequested += () => _ = ShowProfilesAsync();
+            _homePage.OpenSchedulesRequested += () => _ = ShowSchedulesAsync();
+            _homePage.OpenHistoryRequested += () => _ = ShowHistoryAsync();
+            _homePage.OpenSettingsRequested += () => _ = ShowSettingsAsync();
+            _homePage.OpenFtpConnectionsRequested += () => _ = ShowFtpConnectionsAsync();
+            _homePage.OpenFtpTasksRequested += () => _ = ShowFtpTasksAsync();
+            _homePage.CompareProfileRequested += p =>
+            {
+                LoadProfile(p);
+                GoTo(AppScreen.Comparison);
+                _ = CompareAsync();
+            };
+            return _homePage;
+        }
+    }
 
     public ProfilesViewModel Profiles
     {
@@ -531,6 +560,12 @@ public sealed class MainViewModel : ObservableObject
             return false;
         CurrentScreen = screen;
         return true;
+    }
+
+    public async Task ShowHomeAsync()
+    {
+        if (!GoTo(AppScreen.Home)) return;
+        await Home.LoadAsync();
     }
 
     public async Task ShowProfilesAsync()
@@ -785,6 +820,10 @@ public sealed class MainViewModel : ObservableObject
         finally { _loading = false; }
         IsDirty = false;
         await LoadAvailableProfilesAsync();
+        if (_screen == AppScreen.Home)
+        {
+            await Home.LoadAsync();
+        }
     }
 
     private SyncProfile? _selectedProfileItem;

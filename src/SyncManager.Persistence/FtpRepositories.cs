@@ -200,7 +200,9 @@ public sealed class FtpTaskRepository : IFtpTaskRepository
                    Method, IncludedPathsJson, ExclusionPatternsJson, RequireChecklistApproval,
                    BackupBeforeOverwrite, ProhibitRemoteDeletions, CreatedAt, LastExecutedAt,
                    UseAtomicUpload, WebhookUrl, WebhookType, NotifyOnCompletion, FrameworkPreset,
-                   EnableMaintenanceMode, MaintenanceFileName
+                   EnableMaintenanceMode, MaintenanceFileName,
+                   ExcludedPathsJson, ComparisonStrategy, TimestampToleranceSeconds, MaxRemoteDeletePercentage,
+                   RequireExplicitChecklistConfirmation
             FROM FtpTasks
             ORDER BY Name COLLATE NOCASE ASC;
             """;
@@ -223,7 +225,9 @@ public sealed class FtpTaskRepository : IFtpTaskRepository
                    Method, IncludedPathsJson, ExclusionPatternsJson, RequireChecklistApproval,
                    BackupBeforeOverwrite, ProhibitRemoteDeletions, CreatedAt, LastExecutedAt,
                    UseAtomicUpload, WebhookUrl, WebhookType, NotifyOnCompletion, FrameworkPreset,
-                   EnableMaintenanceMode, MaintenanceFileName
+                   EnableMaintenanceMode, MaintenanceFileName,
+                   ExcludedPathsJson, ComparisonStrategy, TimestampToleranceSeconds, MaxRemoteDeletePercentage,
+                   RequireExplicitChecklistConfirmation
             FROM FtpTasks
             WHERE Id = $id;
             """;
@@ -246,7 +250,9 @@ public sealed class FtpTaskRepository : IFtpTaskRepository
                    Method, IncludedPathsJson, ExclusionPatternsJson, RequireChecklistApproval,
                    BackupBeforeOverwrite, ProhibitRemoteDeletions, CreatedAt, LastExecutedAt,
                    UseAtomicUpload, WebhookUrl, WebhookType, NotifyOnCompletion, FrameworkPreset,
-                   EnableMaintenanceMode, MaintenanceFileName
+                   EnableMaintenanceMode, MaintenanceFileName,
+                   ExcludedPathsJson, ComparisonStrategy, TimestampToleranceSeconds, MaxRemoteDeletePercentage,
+                   RequireExplicitChecklistConfirmation
             FROM FtpTasks
             WHERE ConnectionProfileId = $connId
             ORDER BY Name COLLATE NOCASE ASC;
@@ -272,13 +278,16 @@ public sealed class FtpTaskRepository : IFtpTaskRepository
                 Method, IncludedPathsJson, ExclusionPatternsJson, RequireChecklistApproval,
                 BackupBeforeOverwrite, ProhibitRemoteDeletions, CreatedAt, LastExecutedAt,
                 UseAtomicUpload, WebhookUrl, WebhookType, NotifyOnCompletion, FrameworkPreset,
-                EnableMaintenanceMode, MaintenanceFileName)
+                EnableMaintenanceMode, MaintenanceFileName,
+                ExcludedPathsJson, ComparisonStrategy, TimestampToleranceSeconds, MaxRemoteDeletePercentage,
+                RequireExplicitChecklistConfirmation)
             VALUES(
                 $id, $name, $desc, $connId, $sourcePath, $targetPath,
                 $method, $included, $exclusions, $checklist,
                 $backup, $prohibitDelete, $created, $lastExecuted,
                 $atomic, $webhookUrl, $webhookType, $notify, $framework,
-                $maintenance, $maintFile)
+                $maintenance, $maintFile,
+                $excluded, $strategy, $tolerance, $maxDelete, $explicitConfirm)
             ON CONFLICT(Id) DO UPDATE SET
                 Name = excluded.Name,
                 Description = excluded.Description,
@@ -298,7 +307,12 @@ public sealed class FtpTaskRepository : IFtpTaskRepository
                 NotifyOnCompletion = excluded.NotifyOnCompletion,
                 FrameworkPreset = excluded.FrameworkPreset,
                 EnableMaintenanceMode = excluded.EnableMaintenanceMode,
-                MaintenanceFileName = excluded.MaintenanceFileName;
+                MaintenanceFileName = excluded.MaintenanceFileName,
+                ExcludedPathsJson = excluded.ExcludedPathsJson,
+                ComparisonStrategy = excluded.ComparisonStrategy,
+                TimestampToleranceSeconds = excluded.TimestampToleranceSeconds,
+                MaxRemoteDeletePercentage = excluded.MaxRemoteDeletePercentage,
+                RequireExplicitChecklistConfirmation = excluded.RequireExplicitChecklistConfirmation;
             """;
 
         cmd.Parameters.AddWithValue("$id", task.Id.ToString());
@@ -322,6 +336,11 @@ public sealed class FtpTaskRepository : IFtpTaskRepository
         cmd.Parameters.AddWithValue("$framework", (int)task.FrameworkPreset);
         cmd.Parameters.AddWithValue("$maintenance", task.EnableMaintenanceMode ? 1 : 0);
         cmd.Parameters.AddWithValue("$maintFile", (object?)task.MaintenanceFileName ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$excluded", JsonSerializer.Serialize(task.ExcludedRelativePaths));
+        cmd.Parameters.AddWithValue("$strategy", (int)task.ComparisonStrategy);
+        cmd.Parameters.AddWithValue("$tolerance", task.TimestampToleranceSeconds);
+        cmd.Parameters.AddWithValue("$maxDelete", task.MaxRemoteDeletePercentage);
+        cmd.Parameters.AddWithValue("$explicitConfirm", task.RequireExplicitChecklistConfirmation ? 1 : 0);
 
         try
         {
@@ -381,7 +400,12 @@ public sealed class FtpTaskRepository : IFtpTaskRepository
             NotifyOnCompletion = r.FieldCount > 17 && !r.IsDBNull(17) && r.GetInt32(17) == 1,
             FrameworkPreset = r.FieldCount > 18 && !r.IsDBNull(18) ? (WebFrameworkPreset)r.GetInt32(18) : WebFrameworkPreset.Custom,
             EnableMaintenanceMode = r.FieldCount > 19 && !r.IsDBNull(19) && r.GetInt32(19) == 1,
-            MaintenanceFileName = r.FieldCount > 20 && !r.IsDBNull(20) ? r.GetString(20) : ".maintenance"
+            MaintenanceFileName = r.FieldCount > 20 && !r.IsDBNull(20) ? r.GetString(20) : ".maintenance",
+            ExcludedRelativePaths = r.FieldCount > 21 && !r.IsDBNull(21) ? JsonSerializer.Deserialize<List<string>>(r.GetString(21)) ?? [] : [],
+            ComparisonStrategy = r.FieldCount > 22 && !r.IsDBNull(22) ? (FtpComparisonStrategy)r.GetInt32(22) : FtpComparisonStrategy.SizeAndTimestamp,
+            TimestampToleranceSeconds = r.FieldCount > 23 && !r.IsDBNull(23) ? r.GetInt32(23) : 2,
+            MaxRemoteDeletePercentage = r.FieldCount > 24 && !r.IsDBNull(24) ? r.GetDouble(24) : 0.20,
+            RequireExplicitChecklistConfirmation = !(r.FieldCount > 25 && !r.IsDBNull(25)) || r.GetInt32(25) == 1
         };
     }
 }

@@ -1,0 +1,463 @@
+<UserControl xmlns:mvvm="clr-namespace:SyncManager.Wpf.Mvvm" x:Class="SyncManager.Wpf.Views.Pages.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:SyncManager.Wpf.Controls">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <mvvm:InverseBooleanToVisibilityConverter x:Key="NotBoolToVis"/>
+
+        <Style x:Key="DashboardCard" TargetType="Border" BasedOn="{StaticResource PanelBorder}">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14,12"/>
+        </Style>
+
+        <Style x:Key="StatButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="14,10">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimarySoftBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="QuickActionButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,10,10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="12,12">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimarySoftBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20,16,20,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 1. TOPO: BOAS-VINDAS E AÇÕES RÁPIDAS -->
+            <Grid Grid.Row="0" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Path Data="{StaticResource IconHome}" Width="28" Height="28" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Visão Geral" Style="{StaticResource PageTitle}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="Acompanhe o status do sistema, atalhos para tarefas frequentes e últimas sincronizações realizadas."
+                               Style="{StaticResource PageSubtitle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Atualizar" Command="{Binding RefreshCommand}" Style="{StaticResource SecondaryButton}"
+                            ctl:Icon.Data="{StaticResource IconSync}" Margin="0,0,8,0"/>
+                    <Button Content="Nova Comparação" Command="{Binding NewComparisonCommand}" Style="{StaticResource PrimaryButton}"
+                            ctl:Icon.Data="{StaticResource IconCompare}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- 2. LINHA DE KPI / ESTATÍSTICAS -->
+            <Grid Grid.Row="1" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Perfis -->
+                <Button Grid.Column="0" Style="{StaticResource StatButton}" Margin="0,0,8,0" Command="{Binding OpenProfilesCommand}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalProfiles}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <TextBlock Text="Perfis Salvos" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="Rotinas locais" Style="{StaticResource SmallMutedText}"/>
+                        </StackPanel>
+                        <Path Grid.Column="1" Data="{StaticResource IconProfiles}" Width="24" Height="24" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Opacity="0.8" VerticalAlignment="Top"/>
+                    </Grid>
+                </Button>
+
+                <!-- Agendamentos -->
+                <Button Grid.Column="1" Style="{StaticResource StatButton}" Margin="0,0,8,0" Command="{Binding OpenSchedulesCommand}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalSchedules}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <TextBlock Text="Agendamentos" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="Automações ativas" Style="{StaticResource SmallMutedText}"/>
+                        </StackPanel>
+                        <Path Grid.Column="1" Data="{StaticResource IconCalendar}" Width="24" Height="24" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" Opacity="0.8" VerticalAlignment="Top"/>
+                    </Grid>
+                </Button>
+
+                <!-- Conexões FTP -->
+                <Button Grid.Column="2" Style="{StaticResource StatButton}" Margin="0,0,8,0" Command="{Binding OpenFtpConnectionsCommand}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalFtpConnections}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PurpleBrush}"/>
+                            <TextBlock Text="Conexões FTP" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="Servidores remotos" Style="{StaticResource SmallMutedText}"/>
+                        </StackPanel>
+                        <Path Grid.Column="1" Data="{StaticResource IconServer}" Width="24" Height="24" Stretch="Uniform" Fill="{DynamicResource PurpleBrush}" Opacity="0.8" VerticalAlignment="Top"/>
+                    </Grid>
+                </Button>
+
+                <!-- Tarefas FTP -->
+                <Button Grid.Column="3" Style="{StaticResource StatButton}" Margin="0,0,8,0" Command="{Binding OpenFtpTasksCommand}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalFtpTasks}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PurpleBrush}"/>
+                            <TextBlock Text="Tarefas FTP" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="Deploys e backups" Style="{StaticResource SmallMutedText}"/>
+                        </StackPanel>
+                        <Path Grid.Column="1" Data="{StaticResource IconGlobe}" Width="24" Height="24" Stretch="Uniform" Fill="{DynamicResource PurpleBrush}" Opacity="0.8" VerticalAlignment="Top"/>
+                    </Grid>
+                </Button>
+
+                <!-- Histórico -->
+                <Button Grid.Column="4" Style="{StaticResource StatButton}" Margin="0" Command="{Binding OpenHistoryCommand}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalExecutions}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource SuccessBrush}"/>
+                            <TextBlock Text="Execuções" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="Histórico consolidado" Style="{StaticResource SmallMutedText}"/>
+                        </StackPanel>
+                        <Path Grid.Column="1" Data="{StaticResource IconHistory}" Width="24" Height="24" Stretch="Uniform" Fill="{DynamicResource SuccessBrush}" Opacity="0.8" VerticalAlignment="Top"/>
+                    </Grid>
+                </Button>
+            </Grid>
+
+            <!-- 3. CORPO PRINCIPAL EM DUAS COLUNAS -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.25*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- COLUNA ESQUERDA: ATALHOS RÁPIDOS E PERFIS -->
+                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+
+                    <!-- SEÇÃO: ATALHOS RÁPIDOS -->
+                    <Border Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Ações Rápidas" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                            <UniformGrid Columns="2">
+                                <!-- Nova Comparação -->
+                                <Button Style="{StaticResource QuickActionButton}" Command="{Binding NewComparisonCommand}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Data="{StaticResource IconCompare}" Width="22" Height="22" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Comparar Pastas" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Analisar diferenças entre Source e Target" Style="{StaticResource SmallMutedText}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+
+                                <!-- Novo Perfil -->
+                                <Button Style="{StaticResource QuickActionButton}" Command="{Binding NewProfileCommand}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Data="{StaticResource IconAdd}" Width="22" Height="22" Stretch="Uniform" Fill="{DynamicResource SuccessBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Criar Perfil" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Salvar novas pastas e regras de sincronização" Style="{StaticResource SmallMutedText}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+
+                                <!-- Conexões FTP -->
+                                <Button Style="{StaticResource QuickActionButton}" Command="{Binding OpenFtpConnectionsCommand}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Data="{StaticResource IconServer}" Width="22" Height="22" Stretch="Uniform" Fill="{DynamicResource PurpleBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Conexões FTP / SFTP" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Gerenciar credenciais e servidores remotos" Style="{StaticResource SmallMutedText}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+
+                                <!-- Tarefas FTP -->
+                                <Button Style="{StaticResource QuickActionButton}" Command="{Binding OpenFtpTasksCommand}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Data="{StaticResource IconGlobe}" Width="22" Height="22" Stretch="Uniform" Fill="{DynamicResource PurpleBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Tarefas de Deploy FTP" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Rotinas com checklist e upload atômico" Style="{StaticResource SmallMutedText}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+
+                                <!-- Agendamentos -->
+                                <Button Style="{StaticResource QuickActionButton}" Command="{Binding OpenSchedulesCommand}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Data="{StaticResource IconCalendar}" Width="22" Height="22" Stretch="Uniform" Fill="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Agendador de Tarefas" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Programar execuções periódicas automáticas" Style="{StaticResource SmallMutedText}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+
+                                <!-- Configurações -->
+                                <Button Style="{StaticResource QuickActionButton}" Command="{Binding OpenSettingsCommand}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Data="{StaticResource IconSettings}" Width="22" Height="22" Stretch="Uniform" Fill="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Configurações" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Ajustar segurança, lixeira e notificações" Style="{StaticResource SmallMutedText}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- SEÇÃO: PERFIS SALVOS -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Perfis para Execução Rápida" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Ver todos os perfis" Style="{StaticResource SecondaryButton}" Command="{Binding OpenProfilesCommand}" Padding="8,4" Margin="0"/>
+                            </Grid>
+
+                            <!-- Lista de Perfis Recentes -->
+                            <ItemsControl ItemsSource="{Binding RecentProfiles}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                                BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0"/>
+                                                        <Border Background="{DynamicResource PrimarySoftBrush}" CornerRadius="4" Padding="6,1">
+                                                            <TextBlock Text="{Binding MethodText}" FontSize="11" Foreground="{DynamicResource PrimaryBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                    <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2">
+                                                        <Run Text="De: " FontWeight="SemiBold"/><Run Text="{Binding SourcePath, Mode=OneWay}"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                                                        <Run Text="Para: " FontWeight="SemiBold"/><Run Text="{Binding TargetPath, Mode=OneWay}"/>
+                                                    </TextBlock>
+
+                                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                        <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="•" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding LastRunText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="Comparar" Style="{StaticResource PrimaryButton}" Padding="12,6" Margin="0"
+                                                            ctl:Icon.Data="{StaticResource IconCompare}"
+                                                            Command="{Binding DataContext.CompareProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Placeholder quando não há perfis -->
+                            <Border Visibility="{Binding HasProfiles, Converter={StaticResource NotBoolToVis}}"
+                                    Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1" CornerRadius="6" Padding="20" HorizontalAlignment="Stretch">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Path Data="{StaticResource IconProfiles}" Width="32" Height="32" Stretch="Uniform" Fill="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Nenhum perfil salvo ainda." FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="Crie um perfil com pastas e regras para sincronizar com apenas um clique." Style="{StaticResource SmallMutedText}" HorizontalAlignment="Center" Margin="0,2,0,10"/>
+                                    <Button Content="Criar meu primeiro perfil" Style="{StaticResource PrimaryButton}" Command="{Binding NewProfileCommand}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- COLUNA DIREITA: ÚLTIMA EXECUÇÃO E ATIVIDADES RECENTES -->
+                <StackPanel Grid.Column="1">
+
+                    <!-- DESTAQUE: ÚLTIMA EXECUÇÃO -->
+                    <Border Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Última Execução" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <Button Grid.Column="1" Content="Histórico completo" Style="{StaticResource SecondaryButton}" Command="{Binding OpenHistoryCommand}" Padding="8,4" Margin="0"/>
+                            </Grid>
+
+                            <Border Visibility="{Binding HasLastExecution, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1" CornerRadius="6" Padding="14">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding LastExecutionTitle}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                        <Border Grid.Column="1" CornerRadius="10" Padding="8,2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{Binding LastExecutionBrush}" BorderThickness="1">
+                                            <TextBlock Text="{Binding LastExecutionStatus}" FontWeight="SemiBold" FontSize="11" Foreground="{Binding LastExecutionBrush}"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding LastExecutionDetails}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="{StaticResource IconClock}" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding LastExecutionTime}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Visibility="{Binding HasLastExecution, Converter={StaticResource NotBoolToVis}}"
+                                    Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1" CornerRadius="6" Padding="16">
+                                <TextBlock Text="Nenhuma execução realizada recentemente." Style="{StaticResource SmallMutedText}" HorizontalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ATIVIDADES RECENTES -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <StackPanel>
+                            <TextBlock Text="Atividades Recentes" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                            <ItemsControl ItemsSource="{Binding RecentActivities}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Grid.Column="0" CornerRadius="4" Padding="6,2" Background="{Binding BadgeBackground}" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding BadgeText}" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StatusText}" FontSize="11" FontWeight="SemiBold" Foreground="{Binding StatusBrush}" HorizontalAlignment="Right"/>
+                                                    <TextBlock Text="{Binding Timestamp}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Placeholder quando não há atividades -->
+                            <Border Visibility="{Binding HasActivities, Converter={StaticResource NotBoolToVis}}"
+                                    Padding="16">
+                                <TextBlock Text="O histórico de atividades locais e FTP aparecerá aqui." Style="{StaticResource SmallMutedText}" HorizontalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

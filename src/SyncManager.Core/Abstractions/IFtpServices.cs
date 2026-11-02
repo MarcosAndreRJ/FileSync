@@ -34,7 +34,8 @@ public interface IFtpDirectoryBrowser
     Task<IReadOnlyList<FtpRemoteItem>> ListDirectoryAsync(
         FtpConnectionProfile profile,
         string remotePath,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        string? explicitPassword = null);
 }
 
 /// <summary>

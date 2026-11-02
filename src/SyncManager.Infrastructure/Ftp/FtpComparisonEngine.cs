@@ -28,6 +28,13 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
             throw new DirectoryNotFoundException($"Diretório de origem local não encontrado: {task.SourceLocalPath}");
         }
 
+        // Seleção persistente: sem nenhuma inclusão explícita, nada é autorizado (nunca a origem inteira).
+        if (!task.IncludedRelativePaths.Any(p => FtpSelectionRules.Normalize(p).Length > 0))
+        {
+            throw new InvalidOperationException(
+                "Nenhuma pasta ou arquivo foi selecionado na tarefa. Defina a seleção persistente antes de comparar; uma seleção vazia não autoriza a sincronização da origem inteira.");
+        }
+
         var allExclusions = FtpFrameworkPresetHelper.ResolveAllExclusions(
             task.ExclusionPatterns,
             task.FrameworkPreset,
@@ -39,7 +46,7 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
 
         // 1. Escanear arquivos locais respeitando o escopo persistente e exclusões
         statusProgress?.Report("Escaneando arquivos locais...");
-        var localFiles = ScanLocalFiles(task.SourceLocalPath, task.IncludedRelativePaths, pathFilter);
+        var localFiles = ScanLocalFiles(task.SourceLocalPath, task.IncludedRelativePaths, task.ExcludedRelativePaths, pathFilter);
 
         // 2. Conectar ao FTP e escanear arquivos remotos
         statusProgress?.Report($"Conectando ao servidor FTP {profile.Host}:{profile.Port}...");
@@ -96,7 +103,7 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
                 var relPath = remote.Key;
                 var remoteItem = remote.Value;
 
-                if (task.IncludedRelativePaths.Count > 0 && !IsInScope(relPath, task.IncludedRelativePaths))
+                if (!FtpSelectionRules.IsIncluded(relPath, task.IncludedRelativePaths, task.ExcludedRelativePaths))
                     continue;
 
                 if (pathFilter.IsExcluded(relPath.Replace('/', '\\'), false))
@@ -281,7 +288,7 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
                 if (seenRemotePaths.Contains(remote.Key))
                     continue;
 
-                if (task.IncludedRelativePaths.Count > 0 && !IsInScope(remote.Key, task.IncludedRelativePaths))
+                if (!FtpSelectionRules.IsIncluded(remote.Key, task.IncludedRelativePaths, task.ExcludedRelativePaths))
                     continue;
 
                 if (pathFilter.IsExcluded(remote.Key.Replace('/', '\\'), false))
@@ -333,45 +340,36 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
         }).ThenBy(i => i.RelativePath, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    private static Dictionary<string, FileInfo> ScanLocalFiles(
+    /// <summary>Varredura local limitada às regras persistentes (a pasta incluída é lida a cada comparação, então arquivos novos entram sozinhos).</summary>
+    public static Dictionary<string, FileInfo> ScanLocalFiles(
         string rootDir,
         IReadOnlyList<string> includedPaths,
+        IReadOnlyList<string> excludedPaths,
         PathFilter filter)
     {
         var result = new Dictionary<string, FileInfo>(StringComparer.OrdinalIgnoreCase);
 
-        // Proteção contra varredura recursiva inadvertida na raiz da unidade do sistema
-        var fullRoot = Path.GetFullPath(rootDir);
-        var pathRoot = Path.GetPathRoot(fullRoot);
-        if (!string.IsNullOrEmpty(pathRoot) &&
-            string.Equals(fullRoot.TrimEnd('\\', '/'), pathRoot.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) &&
-            includedPaths.Count == 0)
+        foreach (var inc in includedPaths)
         {
-            throw new InvalidOperationException($"Não é permitido escanear a raiz inteira da unidade '{fullRoot}' sem especificar um escopo persistente explícito de pastas.");
-        }
+            var rel = FtpSelectionRules.Normalize(inc);
+            if (rel.Length == 0) continue;
 
-        if (includedPaths.Count > 0)
-        {
-            foreach (var inc in includedPaths)
+            var fullPath = Path.GetFullPath(Path.Combine(rootDir, rel.Replace('/', '\\')));
+            // o caminho incluído não pode escapar da raiz configurada
+            if (!fullPath.StartsWith(Path.GetFullPath(rootDir).TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase)) continue;
+
+            if (File.Exists(fullPath))
             {
-                var fullPath = Path.Combine(rootDir, inc.Replace('/', '\\'));
-                if (File.Exists(fullPath))
+                if (!filter.IsExcluded(rel.Replace('/', '\\'), false) &&
+                    FtpSelectionRules.IsIncluded(rel, includedPaths, excludedPaths))
                 {
-                    var rel = inc.Replace('\\', '/').TrimStart('/');
-                    if (!filter.IsExcluded(rel.Replace('/', '\\'), false))
-                    {
-                        result[rel] = new FileInfo(fullPath);
-                    }
-                }
-                else if (Directory.Exists(fullPath))
-                {
-                    ScanDirectoryRecursive(rootDir, fullPath, filter, result);
+                    result[rel] = new FileInfo(fullPath);
                 }
             }
-        }
-        else
-        {
-            ScanDirectoryRecursive(rootDir, rootDir, filter, result);
+            else if (Directory.Exists(fullPath))
+            {
+                ScanDirectoryRecursive(rootDir, fullPath, includedPaths, excludedPaths, filter, result);
+            }
         }
 
         return result;
@@ -380,6 +378,8 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
     private static void ScanDirectoryRecursive(
         string rootDir,
         string currentDir,
+        IReadOnlyList<string> includedPaths,
+        IReadOnlyList<string> excludedPaths,
         PathFilter filter,
         Dictionary<string, FileInfo> result)
     {
@@ -387,7 +387,8 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
         foreach (var file in dirInfo.GetFiles())
         {
             var relPath = Path.GetRelativePath(rootDir, file.FullName).Replace('\\', '/');
-            if (!filter.IsExcluded(relPath.Replace('/', '\\'), false))
+            if (!filter.IsExcluded(relPath.Replace('/', '\\'), false) &&
+                FtpSelectionRules.IsIncluded(relPath, includedPaths, excludedPaths))
             {
                 result[relPath] = file;
             }
@@ -396,27 +397,13 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
         foreach (var sub in dirInfo.GetDirectories())
         {
             var relDir = Path.GetRelativePath(rootDir, sub.FullName).Replace('\\', '/');
-            if (!filter.IsExcluded(relDir.Replace('/', '\\'), true))
+            if (!filter.IsExcluded(relDir.Replace('/', '\\'), true) &&
+                FtpSelectionRules.MayContainIncluded(relDir, includedPaths, excludedPaths))
             {
-                ScanDirectoryRecursive(rootDir, sub.FullName, filter, result);
+                ScanDirectoryRecursive(rootDir, sub.FullName, includedPaths, excludedPaths, filter, result);
             }
         }
     }
-
-    private static bool IsInScope(string relativePath, IReadOnlyList<string> includedPaths)
-    {
-        foreach (var inc in includedPaths)
-        {
-            var cleanInc = inc.Replace('\\', '/').Trim('/');
-            if (relativePath.Equals(cleanInc, StringComparison.OrdinalIgnoreCase) ||
-                relativePath.StartsWith(cleanInc + "/", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static string NormalizeFtpPath(string path)
     {
         var normalized = path.Replace('\\', '/').Trim();

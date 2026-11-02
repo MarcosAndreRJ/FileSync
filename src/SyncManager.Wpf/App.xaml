@@ -5,6 +5,9 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Theme.xaml"/>
+                <ResourceDictionary Source="Resources/FtpTree.xaml"/>
+                <ResourceDictionary Source="Resources/Wizard.xaml"/>
+                <ResourceDictionary Source="Resources/WizardFrame.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

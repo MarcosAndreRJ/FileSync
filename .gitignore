@@ -24,3 +24,5 @@ $RECYCLE.BIN/
 .claude/
 .claude.json
 
+
+artifacts/

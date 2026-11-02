@@ -11,6 +11,7 @@ public sealed class FtpConnectionsViewModel : ObservableObject
     private readonly IFtpConnectionService _connectionService;
     private readonly Func<FtpConnectionProfile, FtpConnectionEditViewModel> _editViewModelFactory;
     private readonly Func<FtpConnectionProfile, string, FtpDiagnosticsViewModel> _diagnosticsViewModelFactory;
+    private readonly Func<FtpConnectionProfile, FtpRemotePickerViewModel>? _browserViewModelFactory;
 
     private FtpConnectionProfile? _selectedConnection;
     private bool _isLoading;
@@ -55,15 +56,19 @@ public sealed class FtpConnectionsViewModel : ObservableObject
     public RelayCommand EditConnectionCommand { get; }
     public RelayCommand DeleteConnectionCommand { get; }
     public RelayCommand TestConnectionCommand { get; }
+    public RelayCommand BrowseCommand { get; }
 
     public event Action<FtpConnectionEditViewModel>? RequestEditConnectionDialog;
     public event Action<FtpDiagnosticsViewModel>? RequestDiagnosticsDialog;
+    public event Action<FtpRemotePickerViewModel>? RequestBrowserDialog;
 
     public FtpConnectionsViewModel(
         IFtpConnectionService connectionService,
         Func<FtpConnectionProfile, FtpConnectionEditViewModel> editViewModelFactory,
-        Func<FtpConnectionProfile, string, FtpDiagnosticsViewModel> diagnosticsViewModelFactory)
+        Func<FtpConnectionProfile, string, FtpDiagnosticsViewModel> diagnosticsViewModelFactory,
+        Func<FtpConnectionProfile, FtpRemotePickerViewModel>? browserViewModelFactory = null)
     {
+        _browserViewModelFactory = browserViewModelFactory;
         _connectionService = connectionService;
         _editViewModelFactory = editViewModelFactory;
         _diagnosticsViewModelFactory = diagnosticsViewModelFactory;
@@ -73,6 +78,13 @@ public sealed class FtpConnectionsViewModel : ObservableObject
         EditConnectionCommand = new RelayCommand(ExecuteEditConnection, () => HasSelection);
         DeleteConnectionCommand = new RelayCommand(async () => await ExecuteDeleteConnectionAsync(), () => HasSelection);
         TestConnectionCommand = new RelayCommand(async () => await ExecuteTestConnectionAsync(), () => HasSelection);
+        BrowseCommand = new RelayCommand(ExecuteBrowse, () => HasSelection && _browserViewModelFactory != null);
+    }
+
+    private void ExecuteBrowse()
+    {
+        if (SelectedConnection == null || _browserViewModelFactory == null) return;
+        RequestBrowserDialog?.Invoke(_browserViewModelFactory(SelectedConnection));
     }
 
     public async Task InitializeAsync()

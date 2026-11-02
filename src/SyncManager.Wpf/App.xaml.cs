@@ -36,6 +36,7 @@ public partial class App : System.Windows.Application
         // Mesmo motor da CLI (agendador, travas, repositórios): a interface só acrescenta ViewModels e diálogos.
         services.AddSyncManagerEngine(databasePath, logDirectory, cliPath);
         services.AddLogging(b => b.AddDebug());
+        services.AddTransient<HomeViewModel>();
         services.AddTransient<ProfilesViewModel>();
         services.AddTransient<HistoryViewModel>();
         services.AddTransient<SettingsViewModel>();
@@ -53,7 +54,10 @@ public partial class App : System.Windows.Application
                 profile,
                 sp.GetRequiredService<IFtpConnectionService>(),
                 sp.GetRequiredService<Func<FtpConnectionProfile, string, FtpDiagnosticsViewModel>>(),
-                sp.GetService<IFtpNotificationService>()));
+                sp.GetService<IFtpNotificationService>(),
+                (p, password) => new FtpRemotePickerViewModel(
+                    sp.GetRequiredService<IFtpDirectoryBrowser>(), p,
+                    string.IsNullOrWhiteSpace(p.DefaultRemotePath) ? "/" : p.DefaultRemotePath, null, password)));
 
         services.AddTransient<Func<FtpSyncTask, IReadOnlyList<FtpChecklistItem>, FtpExecutionViewModel>>(sp =>
             (task, items) => new FtpExecutionViewModel(
@@ -74,7 +78,14 @@ public partial class App : System.Windows.Application
                 task,
                 sp.GetRequiredService<IFtpTaskService>(),
                 sp.GetRequiredService<IFtpConnectionService>(),
-                sp.GetService<IFtpNotificationService>()));
+                sp.GetService<IFtpNotificationService>(),
+                sp.GetService<IFtpDirectoryBrowser>()));
+        services.AddTransient<Func<FtpConnectionProfile, FtpRemotePickerViewModel>>(sp =>
+            profile => new FtpRemotePickerViewModel(
+                sp.GetRequiredService<IFtpDirectoryBrowser>(),
+                profile,
+                string.IsNullOrWhiteSpace(profile.DefaultRemotePath) ? "/" : profile.DefaultRemotePath,
+                string.IsNullOrWhiteSpace(profile.DefaultLocalPath) ? null : profile.DefaultLocalPath));
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();

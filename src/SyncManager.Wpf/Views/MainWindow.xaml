@@ -31,6 +31,9 @@
 
                 <!-- Navegação principal e ferramentas secundárias -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="NavHome" Style="{StaticResource NavButton}" Content="Início" Command="{Binding ShowHomeCommand}"
+                            Tag="{Binding HomeNavTag}" Padding="12,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconHome}"
+                            ToolTip="Painel de controle e visão geral"/>
                     <Button x:Name="NavComparison" Style="{StaticResource NavButton}" Content="Comparação" Command="{Binding ShowComparisonCommand}"
                             Tag="{Binding ComparisonNavTag}" Padding="12,5" Margin="0,0,4,0" ctl:Icon.Data="{StaticResource IconCompare}"
                             ToolTip="Comparar e sincronizar pastas"/>
@@ -64,6 +67,9 @@
 
         <!-- Área principal de conteúdo em tela cheia (sem sidebar de 200px) -->
         <Grid>
+            <Grid Visibility="{Binding IsHomeScreen, Converter={StaticResource BoolToVis}}">
+                <pages:HomeView x:Name="HomePage" DataContext="{Binding Home}"/>
+            </Grid>
             <pages:ComparisonView x:Name="ComparisonPage" Visibility="{Binding IsComparisonScreen, Converter={StaticResource BoolToVis}}"/>
             <pages:PlanView x:Name="PlanPage" Visibility="{Binding IsPlanScreen, Converter={StaticResource BoolToVis}}"/>
             <pages:ExecutionView x:Name="ExecutionPage" Visibility="{Binding IsExecutionScreen, Converter={StaticResource BoolToVis}}"/>

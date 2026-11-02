@@ -99,11 +99,11 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock FontFamily="Consolas, Courier New, monospace" FontSize="11" Margin="0,1">
-                                    <Run Text="{Binding Timestamp, StringFormat='[{0:HH:mm:ss.fff}]'}" Foreground="#888888"/>
+                                    <Run Text="{Binding Timestamp, Mode=OneWay, StringFormat='[{0:HH:mm:ss.fff}]'}" Foreground="#888888"/>
                                     <Run Text=" "/>
-                                    <Run Text="{Binding Direction, StringFormat='[{0}]'}" Foreground="#4EC9B0"/>
+                                    <Run Text="{Binding Direction, Mode=OneWay, StringFormat='[{0}]'}" Foreground="#4EC9B0"/>
                                     <Run Text=" "/>
-                                    <Run Text="{Binding Message}" Foreground="#DCDCDC"/>
+                                    <Run Text="{Binding Message, Mode=OneWay}" Foreground="#DCDCDC"/>
                                 </TextBlock>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

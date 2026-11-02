@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <BooleanToVisibilityConverter x:Key="FsBoolToVis"/>
+
+    <!-- Item de árvore de arquivos: expansão sob demanda e seleção ligadas ao ViewModel (FsNode) -->
+    <Style x:Key="FsTreeItemStyle" TargetType="TreeViewItem">
+        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+        <Setter Property="Padding" Value="2,3"/>
+    </Style>
+
+    <HierarchicalDataTemplate x:Key="FsNodeTemplate" ItemsSource="{Binding Children}">
+        <StackPanel Orientation="Horizontal">
+            <CheckBox IsThreeState="True" IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,6,0"
+                      Visibility="{Binding ShowCheckBox, Converter={StaticResource FsBoolToVis}}"/>
+            <TextBlock Text="{Binding Glyph}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding StateText}" Style="{DynamicResource SmallMutedText}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+            <TextBlock Text="carregando…" Style="{DynamicResource SmallMutedText}" Margin="10,0,0,0" VerticalAlignment="Center"
+                       Visibility="{Binding IsLoading, Converter={StaticResource FsBoolToVis}}"/>
+            <TextBlock Text="{Binding Error}" Foreground="{DynamicResource DangerBrush}" Margin="10,0,0,0" VerticalAlignment="Center"
+                       Visibility="{Binding HasError, Converter={StaticResource FsBoolToVis}}"/>
+        </StackPanel>
+    </HierarchicalDataTemplate>
+</ResourceDictionary>
