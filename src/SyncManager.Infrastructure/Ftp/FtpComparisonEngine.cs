@@ -87,6 +87,100 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
 
         var remoteBasePath = NormalizeFtpPath(task.TargetRemotePath);
 
+        // Se o método for DownloadServer, a direção primária de sincronização é do Servidor para o Local
+        if (task.Method == FtpSyncMethod.DownloadServer)
+        {
+            foreach (var remote in remoteFiles)
+            {
+                ct.ThrowIfCancellationRequested();
+                var relPath = remote.Key;
+                var remoteItem = remote.Value;
+
+                if (task.IncludedRelativePaths.Count > 0 && !IsInScope(relPath, task.IncludedRelativePaths))
+                    continue;
+
+                if (pathFilter.IsExcluded(relPath.Replace('/', '\\'), false))
+                    continue;
+
+                seenRemotePaths.Add(relPath);
+                var remoteFullPath = remoteBasePath + "/" + relPath;
+                var localFullPath = Path.Combine(task.SourceLocalPath, relPath.Replace('/', '\\'));
+                var remoteSize = remoteItem.Size;
+                var remoteTime = remoteItem.Modified != DateTime.MinValue ? remoteItem.Modified.ToUniversalTime() : (DateTime?)null;
+
+                if (localFiles.TryGetValue(relPath, out var localInfo))
+                {
+                    var localSize = localInfo.Length;
+                    var localTime = localInfo.LastWriteTimeUtc;
+
+                    bool isSizeEqual = localSize == remoteSize;
+                    bool isTimeEqual = remoteTime.HasValue && Math.Abs((localTime - remoteTime.Value).TotalSeconds) <= 2;
+
+                    if (isSizeEqual && isTimeEqual)
+                    {
+                        checklist.Add(new FtpChecklistItem
+                        {
+                            RelativePath = relPath,
+                            LocalFullPath = localFullPath,
+                            RemoteFullPath = remoteFullPath,
+                            ProposedAction = FtpPlannedAction.Keep,
+                            StatusReason = "Arquivo idêntico (tamanho e data conferem)",
+                            FileSizeBytes = remoteSize,
+                            LocalModifiedTime = localTime,
+                            RemoteModifiedTime = remoteTime,
+                            IsSelected = false
+                        });
+                    }
+                    else
+                    {
+                        string desc;
+                        if (!isSizeEqual && isTimeEqual)
+                            desc = $"Tamanho diferente (Local: {FormatBytes(localSize)}, Remoto: {FormatBytes(remoteSize)})";
+                        else if (isSizeEqual && !isTimeEqual)
+                            desc = $"Data diferente (Local: {localTime:g}, Remoto: {remoteTime:g})";
+                        else
+                            desc = "Tamanho e data diferentes";
+
+                        checklist.Add(new FtpChecklistItem
+                        {
+                            RelativePath = relPath,
+                            LocalFullPath = localFullPath,
+                            RemoteFullPath = remoteFullPath,
+                            ProposedAction = FtpPlannedAction.UpdateLocal,
+                            StatusReason = desc,
+                            FileSizeBytes = remoteSize,
+                            LocalModifiedTime = localTime,
+                            RemoteModifiedTime = remoteTime,
+                            IsSelected = true
+                        });
+                    }
+                }
+                else
+                {
+                    checklist.Add(new FtpChecklistItem
+                    {
+                        RelativePath = relPath,
+                        LocalFullPath = localFullPath,
+                        RemoteFullPath = remoteFullPath,
+                        ProposedAction = FtpPlannedAction.DownloadNew,
+                        StatusReason = "Novo arquivo remoto (não existe localmente)",
+                        FileSizeBytes = remoteSize,
+                        LocalModifiedTime = DateTime.MinValue,
+                        RemoteModifiedTime = remoteTime,
+                        IsSelected = true
+                    });
+                }
+            }
+
+            statusProgress?.Report($"Comparação de download concluída: {checklist.Count} itens analisados.");
+            return checklist.OrderBy(i => i.ProposedAction switch
+            {
+                FtpPlannedAction.DownloadNew => 1,
+                FtpPlannedAction.UpdateLocal => 2,
+                _ => 3
+            }).ThenBy(i => i.RelativePath, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
         foreach (var local in localFiles)
         {
             ct.ThrowIfCancellationRequested();
@@ -107,7 +201,23 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
                 bool isSizeEqual = localSize == remoteSize;
                 bool isTimeEqual = remoteTime.HasValue && Math.Abs((localTime - remoteTime.Value).TotalSeconds) <= 2;
 
-                if (isSizeEqual && isTimeEqual)
+                if (task.Method == FtpSyncMethod.CopyNewOnly)
+                {
+                    // No método Copiar Somente Novos, qualquer arquivo já existente no destino é mantido inalterado
+                    checklist.Add(new FtpChecklistItem
+                    {
+                        RelativePath = relPath,
+                        LocalFullPath = localFullPath,
+                        RemoteFullPath = remoteFullPath,
+                        ProposedAction = FtpPlannedAction.Keep,
+                        StatusReason = "Arquivo já existe no destino (método: Copiar somente novos)",
+                        FileSizeBytes = localSize,
+                        LocalModifiedTime = localTime,
+                        RemoteModifiedTime = remoteTime,
+                        IsSelected = false
+                    });
+                }
+                else if (isSizeEqual && isTimeEqual)
                 {
                     checklist.Add(new FtpChecklistItem
                     {
@@ -229,6 +339,16 @@ public sealed class FtpComparisonEngine : IFtpComparisonEngine
         PathFilter filter)
     {
         var result = new Dictionary<string, FileInfo>(StringComparer.OrdinalIgnoreCase);
+
+        // Proteção contra varredura recursiva inadvertida na raiz da unidade do sistema
+        var fullRoot = Path.GetFullPath(rootDir);
+        var pathRoot = Path.GetPathRoot(fullRoot);
+        if (!string.IsNullOrEmpty(pathRoot) &&
+            string.Equals(fullRoot.TrimEnd('\\', '/'), pathRoot.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) &&
+            includedPaths.Count == 0)
+        {
+            throw new InvalidOperationException($"Não é permitido escanear a raiz inteira da unidade '{fullRoot}' sem especificar um escopo persistente explícito de pastas.");
+        }
 
         if (includedPaths.Count > 0)
         {

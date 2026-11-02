@@ -49,7 +49,10 @@ public enum FtpPlannedAction
     UploadNew = 1,      // Upload de arquivo novo
     UpdateExisting = 2, // Atualizar versão existente no destino
     DeleteRemote = 3,   // Exclusão remota no servidor
-    IgnoreManual = 4    // Ignorado/desmarcado manualmente no checklist
+    IgnoreManual = 4,   // Ignorado/desmarcado manualmente no checklist
+    DownloadNew = 5,    // Baixar arquivo novo do servidor para a pasta local
+    UpdateLocal = 6,    // Atualizar versão local a partir do servidor
+    DeleteLocal = 7     // Exclusão local (quando aplicável em espelhamento reverso sob autorização)
 }
 
 /// <summary>

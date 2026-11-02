@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using FluentFTP;
 using FluentFTP.Exceptions;
+using Microsoft.Extensions.Logging;
 using SyncManager.Core.Abstractions;
 using SyncManager.Core.Enums;
 using SyncManager.Core.Models;
@@ -14,19 +15,22 @@ public sealed class FtpTransferEngine : IFtpTransferEngine
     private readonly IFtpTaskRepository _taskRepository;
     private readonly IFtpConnectionRepository _connectionRepository;
     private readonly IFtpNotificationService? _notificationService;
+    private readonly ILogger<FtpTransferEngine>? _logger;
 
     public FtpTransferEngine(
         IFluentFtpClientFactory clientFactory,
         IFtpHistoryRepository historyRepository,
         IFtpTaskRepository taskRepository,
         IFtpConnectionRepository connectionRepository,
-        IFtpNotificationService? notificationService = null)
+        IFtpNotificationService? notificationService = null,
+        ILogger<FtpTransferEngine>? logger = null)
     {
         _clientFactory = clientFactory;
         _historyRepository = historyRepository;
         _taskRepository = taskRepository;
         _connectionRepository = connectionRepository;
         _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<FtpExecutionHistoryEntry> ExecuteTransferAsync(
@@ -140,9 +144,10 @@ public sealed class FtpTransferEngine : IFtpTransferEngine
                     };
                     progress?.Report(progressInfo);
 
+                    var localFilePath = Path.Combine(task.SourceLocalPath, item.RelativePath.Replace('/', '\\'));
+
                     if (item.ProposedAction is FtpPlannedAction.UploadNew or FtpPlannedAction.UpdateExisting)
                     {
-                        var localFilePath = Path.Combine(task.SourceLocalPath, item.RelativePath.Replace('/', '\\'));
                         if (!File.Exists(localFilePath))
                         {
                             throw new FileNotFoundException($"Arquivo local de origem nao encontrado: {localFilePath}");
@@ -210,13 +215,51 @@ public sealed class FtpTransferEngine : IFtpTransferEngine
                                 throw new IOException($"Falha no upload atomico temporario para '{item.RelativePath}'");
                             }
 
-                            // Renomear arquivo temporario para o destino final
-                            if (await client.FileExists(remoteFilePath, ct))
+                            // Renomear arquivo temporario para o destino final preservando o arquivo existente ate a confirmacao
+                            bool targetExisted = await client.FileExists(remoteFilePath, ct);
+                            string? backupRemotePath = null;
+                            if (targetExisted)
                             {
-                                await client.DeleteFile(remoteFilePath, ct);
+                                backupRemotePath = remoteFilePath + ".bak_atomic_" + Guid.NewGuid().ToString("N")[..8];
+                                await client.Rename(remoteFilePath, backupRemotePath, ct);
                             }
-                            await client.Rename(tempRemotePath, remoteFilePath, ct);
-                            tempRemotePathToClean = null;
+
+                            try
+                            {
+                                await client.Rename(tempRemotePath, remoteFilePath, ct);
+                                tempRemotePathToClean = null;
+
+                                if (backupRemotePath != null)
+                                {
+                                    try
+                                    {
+                                        await client.DeleteFile(backupRemotePath, CancellationToken.None);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        logProgress?.Report(new FtpProtocolLogEntry($"Aviso: Nao foi possivel remover o backup temporario '{backupRemotePath}': {ex.Message}"));
+                                    }
+                                }
+                            }
+                            catch
+                            {
+                                // Se a renomeacao falhar, restaurar o arquivo original intacto
+                                if (backupRemotePath != null)
+                                {
+                                    try
+                                    {
+                                        if (await client.FileExists(backupRemotePath, CancellationToken.None))
+                                        {
+                                            await client.Rename(backupRemotePath, remoteFilePath, CancellationToken.None);
+                                        }
+                                    }
+                                    catch (Exception restoreEx)
+                                    {
+                                        logProgress?.Report(new FtpProtocolLogEntry($"Erro: Falha critica ao tentar restaurar backup do arquivo '{remoteFilePath}': {restoreEx.Message}"));
+                                    }
+                                }
+                                throw;
+                            }
                         }
                         else
                         {
@@ -267,6 +310,74 @@ public sealed class FtpTransferEngine : IFtpTransferEngine
                         }
                         throw;
                     }
+                    }
+                    else if (item.ProposedAction is FtpPlannedAction.DownloadNew or FtpPlannedAction.UpdateLocal)
+                    {
+                        var localDir = Path.GetDirectoryName(localFilePath);
+                        if (!string.IsNullOrEmpty(localDir) && !Directory.Exists(localDir))
+                        {
+                            Directory.CreateDirectory(localDir);
+                        }
+
+                        long fileBytesSoFar = 0;
+                        var dlProgress = new Progress<FtpProgress>(p =>
+                        {
+                            var delta = p.TransferredBytes - fileBytesSoFar;
+                            if (delta > 0)
+                            {
+                                Interlocked.Add(ref transferredBytes, delta);
+                                fileBytesSoFar = p.TransferredBytes;
+                            }
+
+                            progressInfo.CurrentFileTransferredBytes = p.TransferredBytes;
+                            progressInfo.TransferredBytes = transferredBytes;
+
+                            if (rateSw.ElapsedMilliseconds >= 250)
+                            {
+                                var totalSec = totalSw.Elapsed.TotalSeconds;
+                                if (totalSec > 0)
+                                {
+                                    var rate = transferredBytes / totalSec;
+                                    progressInfo.TransferRateBytesPerSec = rate;
+                                    var remainingBytes = Math.Max(0, totalBytes - transferredBytes);
+                                    if (rate > 0)
+                                    {
+                                        progressInfo.EstimatedTimeRemaining = TimeSpan.FromSeconds(remainingBytes / rate);
+                                    }
+                                }
+                                rateSw.Restart();
+                            }
+
+                            progress?.Report(progressInfo);
+                        });
+
+                        var dlStatus = await client.DownloadFile(
+                            localFilePath,
+                            remoteFilePath,
+                            FtpLocalExists.Overwrite,
+                            FtpVerify.None,
+                            dlProgress,
+                            ct);
+
+                        if (dlStatus == FtpStatus.Failed)
+                        {
+                            throw new IOException($"Falha reportada pelo FluentFTP ao baixar: {item.RelativePath}");
+                        }
+
+                        if (profile.PreserveModTime && item.RemoteModifiedTime.HasValue)
+                        {
+                            try
+                            {
+                                File.SetLastWriteTimeUtc(localFilePath, item.RemoteModifiedTime.Value);
+                            }
+                            catch
+                            {
+                                // Pode falhar se o arquivo estiver bloqueado temporariamente
+                            }
+                        }
+
+                        completedFiles++;
+                        fileRecord.Success = true;
                     }
                     else if (item.ProposedAction == FtpPlannedAction.DeleteRemote)
                     {

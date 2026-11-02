@@ -93,17 +93,19 @@ public sealed class FluentFtpClientFactory : IFluentFtpClientFactory
                     e.Accept = false;
                     return;
                 }
+                e.Accept = true;
+                return;
             }
 
-            // Se for certificado autoassinado ou corporativo sem pinning rígido, aceitar se válido ou registrar
+            // Validação estrita de certificado TLS: só aceita se não houver erros na cadeia de confiança/política
             if (e.PolicyErrors == SslPolicyErrors.None)
             {
                 e.Accept = true;
             }
             else
             {
-                // Permitir conexão se o usuário configurou (ou se for autoassinado conhecido)
-                e.Accept = true;
+                _logger?.LogWarning("Certificado TLS rejeitado por erros de política: {Errors}", e.PolicyErrors);
+                e.Accept = false;
             }
         };
 
