@@ -107,6 +107,11 @@
                                   DisplayMemberPath="Name" ToolTip="Selecione um perfil salvo para carregar suas configurações"/>
                         <Button Style="{StaticResource NavButton}" Content="Limpar" Command="{Binding ClearProfileCommand}"
                                 Margin="6,0,0,0" Padding="8,4" ToolTip="Limpar dados do perfil e campos de origem/destino"/>
+                        <Button x:Name="SaveProfileButton" Style="{StaticResource NavButton}" Content="Salvar perfil" Command="{Binding SaveComparisonProfileCommand}"
+                                ctl:Icon.Data="{StaticResource IconSave}" Margin="6,0,0,0" Padding="10,4"
+                                ToolTip="Salvar origem, destino e método desta comparação como perfil (atualiza o perfil ativo ou pede um nome)"/>
+                        <Button x:Name="SaveProfileAsButton" Style="{StaticResource NavButton}" Content="Salvar como…" Command="{Binding SaveComparisonProfileAsCommand}"
+                                Margin="2,0,0,0" Padding="8,4" ToolTip="Salvar esta comparação como um novo perfil, mantendo o atual"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">

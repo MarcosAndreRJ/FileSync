@@ -23,6 +23,8 @@ public interface IDialogService
     void ShowError(string title, string message);
     void ShowInfo(string title, string message);
     string? AskSaveFile(string title, string suggestedName, string filter);
+    /// <summary>Pede um texto curto (ex.: nome do perfil). Devolve null se cancelado.</summary>
+    string? AskText(string title, string prompt, string? initial);
     DeleteChoice AskDeleteChoice(DeleteChoiceRequest request);
     void OpenFolder(string path);
     void OpenLogFolder();
@@ -63,6 +65,26 @@ public sealed class DialogService : IDialogService
     {
         var dialog = new SaveFileDialog { Title = title, FileName = suggestedName, Filter = filter, AddExtension = true, OverwritePrompt = true };
         return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+    }
+
+    public string? AskText(string title, string prompt, string? initial)
+    {
+        var box = new System.Windows.Controls.TextBox { Text = initial ?? "", Margin = new Thickness(0, 6, 0, 14), Padding = new Thickness(6, 5, 6, 5) };
+        var ok = new System.Windows.Controls.Button { Content = "Salvar", IsDefault = true, MinWidth = 90, Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(0, 0, 8, 0) };
+        var cancel = new System.Windows.Controls.Button { Content = "Cancelar", IsCancel = true, MinWidth = 90, Padding = new Thickness(10, 5, 10, 5) };
+        var buttons = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(ok); buttons.Children.Add(cancel);
+        var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(18) };
+        panel.Children.Add(new System.Windows.Controls.TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(box); panel.Children.Add(buttons);
+        var window = new Window
+        {
+            Title = title, Content = panel, Width = 440, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = Owner, ShowInTaskbar = false
+        };
+        ok.Click += (_, _) => window.DialogResult = true;
+        window.Loaded += (_, _) => { box.Focus(); box.SelectAll(); };
+        return window.ShowDialog() == true ? box.Text.Trim() : null;
     }
 
     public DeleteChoice AskDeleteChoice(DeleteChoiceRequest request)

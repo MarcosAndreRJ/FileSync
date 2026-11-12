@@ -137,6 +137,8 @@ public sealed class MainViewModel : ObservableObject
         CancelCommand = new RelayCommand(() => _cts?.Cancel(), () => IsBusy);
         NewProfileCommand = new RelayCommand(NewProfile, () => !IsBusy);
         SaveProfileCommand = new AsyncRelayCommand(SaveProfileAsync, () => !IsBusy);
+        SaveComparisonProfileCommand = new AsyncRelayCommand(() => SaveComparisonAsProfileAsync(false), () => !IsBusy);
+        SaveComparisonProfileAsCommand = new AsyncRelayCommand(() => SaveComparisonAsProfileAsync(true), () => !IsBusy);
         ManageProfilesCommand = new AsyncRelayCommand(ShowProfilesAsync, () => !IsBusy);
         ShowHomeCommand = new AsyncRelayCommand(ShowHomeAsync, () => !IsBusy);
         ShowComparisonCommand = new RelayCommand(() => GoTo(AppScreen.Comparison));
@@ -321,6 +323,10 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand ShowErrorsCommand { get; }
     public RelayCommand NewProfileCommand { get; }
     public AsyncRelayCommand SaveProfileCommand { get; }
+    /// <summary>Salva origem/destino/método da comparação atual: atualiza o perfil ativo ou pede um nome para criar um novo.</summary>
+    public AsyncRelayCommand SaveComparisonProfileCommand { get; }
+    /// <summary>Salva a comparação atual como um NOVO perfil (pede o nome), sem alterar o perfil ativo.</summary>
+    public AsyncRelayCommand SaveComparisonProfileAsCommand { get; }
     public AsyncRelayCommand ManageProfilesCommand { get; }
     public AsyncRelayCommand ShowHomeCommand { get; }
     public RelayCommand ShowComparisonCommand { get; }
@@ -904,17 +910,19 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(WindowTitle));
     }
 
-    public async Task SaveProfileAsync()
+    public Task SaveProfileAsync() => TrySaveProfileAsync();
+
+    private async Task<bool> TrySaveProfileAsync()
     {
         if (string.IsNullOrWhiteSpace(_profileName))
         {
             _dialogs.ShowError("Salvar perfil", "Informe o nome do perfil antes de salvar.");
-            return;
+            return false;
         }
         if (string.IsNullOrWhiteSpace(SourcePath) || string.IsNullOrWhiteSpace(TargetPath))
         {
             _dialogs.ShowError("Salvar perfil", "Informe as pastas Source e Target antes de salvar.");
-            return;
+            return false;
         }
 
         try
@@ -925,6 +933,8 @@ public sealed class MainViewModel : ObservableObject
             IsDirty = false;
             StatusMessage = $"Perfil \"{saved.Name}\" salvo.";
             _log.Info("PROFILE SAVED", $"{saved.Name} (#{saved.Id})");
+            await LoadAvailableProfilesAsync();   // o seletor "Perfil ativo" passa a listar e selecionar o perfil salvo
+            return true;
         }
         catch (DuplicateProfileNameException ex)
         {
@@ -935,6 +945,49 @@ public sealed class MainViewModel : ObservableObject
             _log.Error("PROFILE SAVE ERROR", ex.Message);
             _dialogs.ShowError("Não foi possível salvar o perfil", ex.Message);
         }
+        return false;
+    }
+
+    /// <summary>
+    /// Fluxo "salvar a comparação como perfil": valida as pastas, pede o nome quando o perfil ainda não existe
+    /// (ou em "Salvar como…") e grava origem, destino e método. Cancelar não altera nada.
+    /// </summary>
+    public async Task SaveComparisonAsProfileAsync(bool saveAsNew)
+    {
+        if (string.IsNullOrWhiteSpace(SourcePath) || string.IsNullOrWhiteSpace(TargetPath))
+        {
+            _dialogs.ShowError("Salvar perfil", "Informe as pastas de origem e de destino da comparação antes de salvar o perfil.");
+            return;
+        }
+
+        var oldId = _profileId;
+        var oldName = _profileName;
+        if (saveAsNew || _profileId == 0 || string.IsNullOrWhiteSpace(_profileName))
+        {
+            var suggestion = saveAsNew && !string.IsNullOrWhiteSpace(_profileName) ? _profileName + " (cópia)" : SuggestProfileName();
+            var name = _dialogs.AskText(saveAsNew ? "Salvar como novo perfil" : "Salvar perfil",
+                "Nome do perfil (ele guardará a origem, o destino e o método desta comparação):", suggestion);
+            if (string.IsNullOrWhiteSpace(name)) return;
+            if (saveAsNew) _profileId = 0;
+            _profileName = name.Trim();
+            OnPropertyChanged(nameof(ProfileName));
+        }
+
+        if (!await TrySaveProfileAsync())
+        {
+            _profileId = oldId;           // falhou (ex.: nome duplicado): volta ao estado anterior
+            _profileName = oldName;
+            OnPropertyChanged(nameof(ProfileName));
+            OnPropertyChanged(nameof(WindowTitle));
+        }
+    }
+
+    private string SuggestProfileName()
+    {
+        static string Leaf(string p) => System.IO.Path.GetFileName(p.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : p;
+        var s = string.IsNullOrWhiteSpace(SourcePath) ? "" : Leaf(SourcePath);
+        var t = string.IsNullOrWhiteSpace(TargetPath) ? "" : Leaf(TargetPath);
+        return s.Length > 0 && t.Length > 0 ? $"{s} → {t}" : "Novo perfil";
     }
 
     // ------------------------------------------------------------ comparar

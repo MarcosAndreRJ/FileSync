@@ -95,6 +95,9 @@ internal sealed class FakeDialogs : IDialogService
     public List<string> SaveRequests { get; } = new();
     public string? SavePath { get; set; }
     public string? AskSaveFile(string title, string suggestedName, string filter) { SaveRequests.Add(suggestedName); return SavePath; }
+    public string? TextAnswer { get; set; }
+    public List<string> TextPrompts { get; } = new();
+    public string? AskText(string title, string prompt, string? initial) { TextPrompts.Add(initial ?? ""); return TextAnswer; }
     public bool Confirm(string title, string message, bool isWarning) { Confirms.Add(title); return ConfirmAnswer; }
     public void ShowError(string title, string message) => Errors.Add(title + ": " + message);
     public void ShowInfo(string title, string message) => Infos.Add(title);
